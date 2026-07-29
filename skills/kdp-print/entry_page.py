@@ -10,6 +10,14 @@ Parity convention (publishing standard):
 
 from reportlab.lib.units import inch
 from reportlab.lib.colors import HexColor, white, black
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# Register Georgia font family for readability at small sizes
+pdfmetrics.registerFont(TTFont('Georgia', 'C:/Windows/Fonts/georgia.ttf'))
+pdfmetrics.registerFont(TTFont('Georgia-Bold', 'C:/Windows/Fonts/georgiab.ttf'))
+pdfmetrics.registerFont(TTFont('Georgia-Italic', 'C:/Windows/Fonts/georgiai.ttf'))
+pdfmetrics.registerFont(TTFont('Georgia-BoldItalic', 'C:/Windows/Fonts/georgiaz.ttf'))
 
 # ─── Design Tokens ─────────────────────────────────────────────────────────────
 # POD-safe grey palette (all tints ≥12% for reliable B&W reproduction)
@@ -30,7 +38,7 @@ TRIM_W = 6.0 * inch
 TRIM_H = 9.0 * inch
 GUTTER = 0.5 * inch
 OUTER = 0.3 * inch
-TOP_MARGIN = 0.625 * inch
+TOP_MARGIN = 0.45 * inch
 BOTTOM_MARGIN = 0.375 * inch
 FOOTER_BASELINE = 21
 FOOTER_GUARD = 36
@@ -80,7 +88,7 @@ def _section_bar(c, x, y, w, title, h=13):
     c.setFillColor(BAR_COLOR)
     c.rect(x, y, w, h, fill=1, stroke=0)
     c.setFillColor(BAR_TEXT_COLOR)
-    c.setFont("Helvetica-Bold", 8)
+    c.setFont("Georgia-Bold", 8)
     c.drawString(x + 4, y + 3, title)
 
 
@@ -90,10 +98,10 @@ def _thumbprint(c, x, y, s=72):
     c.setLineWidth(0.8)
     c.rect(x, y, s, s, fill=0, stroke=1)
     c.setFillColor(MGRAY)
-    c.setFont("Helvetica", 7)
+    c.setFont("Georgia", 7)
     c.drawCentredString(x + s/2, y + s/2 + 4, "RIGHT")
     c.drawCentredString(x + s/2, y + s/2 - 6, "THUMB")
-    c.setFont("Helvetica", 6)
+    c.setFont("Georgia", 6)
     c.drawCentredString(x + s/2, y - 10, "Signer's Right Thumbprint")
 
 
@@ -105,7 +113,7 @@ def _seal(c, cx, cy, r=28):
     c.circle(cx, cy, r, fill=0, stroke=1)
     c.setDash()
     c.setFillColor(MGRAY)
-    c.setFont("Helvetica", 6.5)
+    c.setFont("Georgia", 6.5)
     c.drawCentredString(cx, cy + 3, "OFFICIAL")
     c.drawCentredString(cx, cy - 7, "SEAL")
 
@@ -113,7 +121,7 @@ def _seal(c, cx, cy, r=28):
 def draw_page_number(c, W, phys_page):
     """Centered page number at bottom."""
     c.setFillColor(LGRAY)
-    c.setFont("Helvetica", 7)
+    c.setFont("Georgia", 7)
     c.drawCentredString(W / 2, FOOTER_BASELINE, str(phys_page))
 
 
@@ -134,6 +142,9 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
     top = TOP_MARGIN
     uw = W - lm - rm
     RH = 16  # row height
+    BAR_H = 13  # section bar height
+    BAR_GAP = 11  # gap between section bar and its content
+    SEC_GAP = 4  # gap between sections
 
     # ─── Header bar ────────────────────────────────────────────────────────────
     hb_h = 24
@@ -141,17 +152,17 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
     c.setFillColor(HEADER_BG)
     c.rect(lm, y, uw, hb_h, fill=1, stroke=0)
     c.setFillColor(DGRAY)
-    c.setFont("Helvetica-Bold", 10)
+    c.setFont("Georgia-Bold", 10)
     c.drawString(lm + 6, y + 8, "NOTARIAL ACT RECORD")
-    c.setFont("Helvetica-Bold", 9)
+    c.setFont("Georgia-Bold", 9)
     c.drawRightString(lm + uw - 6, y + 8, f"Entry No. {entry_no:03d}")
-    y -= 12
+    y -= 14
 
     # ─── A — Date & Time ──────────────────────────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "A — DATE & TIME")
-    y -= 13 + 6
+    _section_bar(c, lm, y - BAR_H, uw, "A — DATE & TIME")
+    y -= BAR_H + BAR_GAP
     c.setFillColor(DGRAY)
-    c.setFont("Helvetica", 8.5)
+    c.setFont("Georgia", 8.5)
     c.drawString(lm, y, "Date:")
     _writeline(c, lm + 45, y - 2, 130)
     c.drawString(lm + 190, y, "Time:")
@@ -160,66 +171,66 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
     c.drawString(lm + 301, y, "AM")
     _checkbox(c, lm + 324, y - 1)
     c.drawString(lm + 335, y, "PM")
-    y -= RH + 3
+    y -= RH + SEC_GAP
 
     # ─── B — Type of Notarial Act ─────────────────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "B — TYPE OF NOTARIAL ACT")
-    y -= 13 + 6
+    _section_bar(c, lm, y - BAR_H, uw, "B — TYPE OF NOTARIAL ACT")
+    y -= BAR_H + BAR_GAP
     c.setFillColor(DGRAY)
-    c.setFont("Helvetica", 8)
+    c.setFont("Georgia", 8)
     row1 = ["Acknowledgment", "Oath / Affirmation", "Copy Certification"]
     cx = lm
     for a in row1:
         _checkbox(c, cx, y - 1)
         c.drawString(cx + 11, y, a)
-        cx += 11 + c.stringWidth(a, "Helvetica", 8) + 18
+        cx += 11 + c.stringWidth(a, "Georgia", 8) + 18
     y -= RH
     row2 = ["Signature Witnessing", "Jurat"]
     cx = lm
     for a in row2:
         _checkbox(c, cx, y - 1)
         c.drawString(cx + 11, y, a)
-        cx += 11 + c.stringWidth(a, "Helvetica", 8) + 18
+        cx += 11 + c.stringWidth(a, "Georgia", 8) + 18
     _checkbox(c, cx, y - 1)
     c.drawString(cx + 11, y, "Other:")
-    _writeline(c, cx + 11 + c.stringWidth("Other:", "Helvetica", 8) + 6, y - 2, lm + uw - cx - 60)
-    y -= RH + 3
+    _writeline(c, cx + 11 + c.stringWidth("Other:", "Georgia", 8) + 6, y - 2, lm + uw - cx - 60)
+    y -= RH + SEC_GAP
 
     # ─── C — Document Information ──────────────────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "C — DOCUMENT INFORMATION")
-    y -= 13 + 6
+    _section_bar(c, lm, y - BAR_H, uw, "C — DOCUMENT INFORMATION")
+    y -= BAR_H + BAR_GAP
     for lbl in ["Document Type:", "Document Date / No. of Pages:", "Description / Title:"]:
         c.setFillColor(DGRAY)
-        c.setFont("Helvetica", 8.5)
+        c.setFont("Georgia", 8.5)
         c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
         _writeline(c, lm + lw + 6, y - 2, uw - lw - 8)
         y -= RH
-    y -= 3
+    y -= SEC_GAP
 
     # ─── D — Signer Information ────────────────────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "D — SIGNER INFORMATION")
-    y -= 13 + 6
+    _section_bar(c, lm, y - BAR_H, uw, "D — SIGNER INFORMATION")
+    y -= BAR_H + BAR_GAP
     for lbl in ["Full Name:", "Address:", "ID Type / Number / Exp.:", "Signer's Signature:"]:
         c.setFillColor(DGRAY)
-        c.setFont("Helvetica", 8.5)
+        c.setFont("Georgia", 8.5)
         c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
         _writeline(c, lm + lw + 6, y - 2, uw - lw - 8)
         y -= RH
-    y -= 3
+    y -= SEC_GAP
 
     # ─── E — Witness ───────────────────────────────────────────────────────────
     e_top = y
     ew = uw * 0.58
     ex = lm if outer_right else (lm + uw - ew)
-    _section_bar(c, ex, e_top - 13, ew, "E — WITNESS (IF APPLICABLE)")
-    yw = e_top - 13 - 8
-    for lbl in ["Witness Name:", "Signature:"]:
+    _section_bar(c, ex, e_top - BAR_H, ew, "E — WITNESS (IF APPLICABLE)")
+    yw = e_top - BAR_H - BAR_GAP
+    for lbl in ["Witness 1 Name:", "Witness 1 Signature:", "Witness 2 Name:", "Witness 2 Signature:"]:
         c.setFillColor(DGRAY)
-        c.setFont("Helvetica", 8.5)
+        c.setFont("Georgia", 8.5)
         c.drawString(ex, yw, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
         _writeline(c, ex + lw + 4, yw - 2, ew - lw - 6)
         yw -= RH
 
@@ -227,53 +238,57 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
     thumb = 72
     thumb_x = (lm + uw - thumb) if outer_right else lm
     thumb_y = e_top - 15 - thumb
-    _section_bar(c, thumb_x, e_top - 13, thumb, "F — THUMB")
+    _section_bar(c, thumb_x, e_top - BAR_H, thumb, "F — THUMB")
     _thumbprint(c, thumb_x, thumb_y, thumb)
-    y = e_top - 98
+    y = e_top - 118
 
     # ─── G — Fees ──────────────────────────────────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "G — FEES")
-    y -= 13 + 6
+    _section_bar(c, lm, y - BAR_H, uw, "G — FEES")
+    y -= BAR_H + BAR_GAP
     c.setFillColor(DGRAY)
-    c.setFont("Helvetica", 8.5)
+    c.setFont("Georgia", 8.5)
     c.drawString(lm, y, "Fee Charged: $")
     _writeline(c, lm + 78, y - 2, 80)
     cx = lm + 175
     for p in ["Cash", "Check", "Elec.", "Waived"]:
         _checkbox(c, cx, y - 1)
         c.drawString(cx + 11, y, p)
-        cx += 11 + c.stringWidth(p, "Helvetica", 8.5) + 12
-    y -= RH + 3
+        cx += 11 + c.stringWidth(p, "Georgia", 8.5) + 12
+    y -= RH + SEC_GAP
 
     # ─── H — Notary Certification & Signature ──────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "H — NOTARY CERTIFICATION & SIGNATURE")
-    y -= 13 + 6
+    _section_bar(c, lm, y - BAR_H, uw, "H — NOTARY CERTIFICATION & SIGNATURE")
+    y -= BAR_H + BAR_GAP
     c.setFillColor(MGRAY)
-    c.setFont("Helvetica-Oblique", 7)
+    c.setFont("Georgia-Italic", 7)
     c.drawString(lm, y, "I certify that the signer personally appeared before me on the date stated above.")
-    y -= 14
-    seal_cx = (lm + uw - 34) if outer_right else (lm + 34)
-    _seal(c, seal_cx, y - 22, r=28)
-    sig_w = uw - 76
-    sig_x = lm if outer_right else (lm + 76)
+    y -= 16
+
+    # Seal sits above signature lines, centered in available space
+    seal_cx = (lm + uw - 38) if outer_right else (lm + 38)
+    _seal(c, seal_cx, y - 18, r=32)
+
+    # Signature fields to the left of (or beside) the seal
+    sig_w = uw - 82
+    sig_x = lm if outer_right else (lm + 82)
     for lbl in ["Notary Name:", "Commission # / Exp.:", "Notary Signature:"]:
         c.setFillColor(DGRAY)
-        c.setFont("Helvetica", 8.5)
+        c.setFont("Georgia", 8.5)
         c.drawString(sig_x, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
         _writeline(c, sig_x + lw + 4, y - 2, sig_w - lw - 6)
         y -= RH
-    y -= 3
+    y -= SEC_GAP
 
     # ─── I — Remarks ───────────────────────────────────────────────────────────
-    _section_bar(c, lm, y - 13, uw, "I — REMARKS")
-    y -= 13 + 8
-    for _ in range(3):
+    _section_bar(c, lm, y - BAR_H, uw, "I — REMARKS")
+    y -= BAR_H + 8
+    for _ in range(2):
         _writeline(c, lm, y - 2, uw)
         y -= RH
 
     # ─── Footer ────────────────────────────────────────────────────────────────
-    draw_page_number(c, W, phys_page)
+    # No page number — Affinity handles pagination
     c.showPage()
 
 
@@ -287,23 +302,23 @@ def draw_cover_page(c, W, H, meta=None):
     c.rect(lm, H - 0.45 * inch, W - 2 * lm, 0.12 * inch, fill=1, stroke=0)
     # Title
     c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 22)
+    c.setFont("Georgia-Bold", 22)
     c.drawCentredString(W / 2, H - 1.7 * inch, "NOTARY PUBLIC")
     c.drawCentredString(W / 2, H - 2.1 * inch, "RECORD JOURNAL")
     # Subtitle
     c.setFillColor(STEEL)
-    c.setFont("Helvetica-Oblique", 11)
+    c.setFont("Georgia-Italic", 11)
     c.drawCentredString(W / 2, H - 2.5 * inch, "Official Log of Notarial Acts")
     # Seal
     _seal(c, W / 2, H - 3.5 * inch, r=48)
     # Fields
     y = H - 4.7 * inch
     c.setFillColor(black)
-    c.setFont("Helvetica", 10)
+    c.setFont("Georgia", 10)
     for lbl in ["Notary's Full Name:", "Commission Number:", "State / Jurisdiction:",
                 "Office / Employer:", "Commission Expires:"]:
         c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 10)
+        lw = c.stringWidth(lbl, "Georgia", 10)
         _writeline(c, lm + lw + 6, y - 2, W - lm - (lm + lw + 6))
         y -= 0.42 * inch
     # Volume line
@@ -314,7 +329,7 @@ def draw_cover_page(c, W, H, meta=None):
     c.setFillColor(NAVY)
     c.rect(lm, 0.6 * inch, W - 2 * lm, 0.75 * inch, fill=1, stroke=0)
     c.setFillColor(white)
-    c.setFont("Helvetica-Oblique", 7.5)
+    c.setFont("Georgia-Italic", 7.5)
     c.drawCentredString(W / 2, 1.02 * inch,
         "This journal is the exclusive property of the notary named above and is")
     c.drawCentredString(W / 2, 0.86 * inch,
@@ -324,16 +339,16 @@ def draw_cover_page(c, W, H, meta=None):
 
 def _para(c, x, y, width, head, body, lead=14, size=9.5):
     """Bold lead-in head + body text, word-wrapped within `width`. Returns next y."""
-    c.setFont("Helvetica-Bold", size)
+    c.setFont("Georgia-Bold", size)
     c.setFillColor(NAVY)
     c.drawString(x, y, head)
-    hw = c.stringWidth(head + "  ", "Helvetica-Bold", size)
-    c.setFont("Helvetica", size)
+    hw = c.stringWidth(head + "  ", "Georgia-Bold", size)
+    c.setFont("Georgia", size)
     c.setFillColor(black)
     startx, avail, line, cy = x + hw, width - hw, "", y
     for w in body.split():
         t = (line + " " + w).strip()
-        if c.stringWidth(t, "Helvetica", size) <= avail:
+        if c.stringWidth(t, "Georgia", size) <= avail:
             line = t
         else:
             c.drawString(startx, cy, line)
@@ -356,7 +371,7 @@ def draw_instructions_page(c, W, H):
     c.setFillColor(NAVY)
     c.rect(lm, H - 0.9 * inch, uw, 0.5 * inch, fill=1, stroke=0)
     c.setFillColor(white)
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Georgia-Bold", 14)
     c.drawString(lm + 6, H - 0.72 * inch, "How to Use This Journal")
     # Instructions
     items = [
@@ -402,15 +417,15 @@ def draw_instructions_page(c, W, H):
         c.setLineWidth(1)
         c.rect(lm, bottom, uw, h, fill=1, stroke=1)
         c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFont("Georgia-Bold", 9.5)
         c.drawString(lm + 10, bottom + h - 14, title)
         ty = bottom + h - HDR - 12
         for label, val in rows:
             c.setFillColor(black)
-            c.setFont("Helvetica-Bold", 7.5)
+            c.setFont("Georgia-Bold", 7.5)
             c.drawString(lm + 18, ty, label)
-            lw = c.stringWidth(label, "Helvetica-Bold", 7.5)
-            c.setFont("Helvetica", 7.5)
+            lw = c.stringWidth(label, "Georgia-Bold", 7.5)
+            c.setFont("Georgia", 7.5)
             c.drawString(lm + 18 + lw + 5, ty, val)
             ty -= ROW
         return h
@@ -418,10 +433,7 @@ def draw_instructions_page(c, W, H):
     fee_h = _refbox(fee_bottom, fees, "TYPICAL FEE SCHEDULE (US)")
     state_bottom = fee_bottom + fee_h + 14
     _refbox(state_bottom, states, "STATE-SPECIFIC REQUIREMENTS")
-    # Footer
-    c.setFillColor(LGRAY)
-    c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, FOOTER_BASELINE, "2")
+    # No page number — Affinity handles pagination
     c.showPage()
 
 
@@ -437,13 +449,13 @@ def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_i
         c.setFillColor(NAVY)
         c.rect(lm, H - 0.85 * inch, uw, 0.45 * inch, fill=1, stroke=0)
         c.setFillColor(white)
-        c.setFont("Helvetica-Bold", 13)
+        c.setFont("Georgia-Bold", 13)
         c.drawCentredString(lm + uw / 2, H - 0.68 * inch, "JOURNAL INDEX / SUMMARY")
         # 6 columns: No. / Date / Signer Name / Doc Type / Act Type / Fee
         cols = [lm + x * inch for x in (0, 0.45, 1.30, 2.65, 3.65, 4.65)]
         hdrs = ["No.", "Date", "Signer Name", "Doc Type", "Act Type", "Fee"]
         y = H - 1.15 * inch
-        c.setFont("Helvetica-Bold", 8)
+        c.setFont("Georgia-Bold", 8)
         c.setFillColor(STEEL)
         for i, hd in enumerate(hdrs):
             c.drawString(cols[i] + 2, y, hd)
@@ -457,7 +469,7 @@ def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_i
             if entry > total_entries:
                 break
             c.setFillColor(black)
-            c.setFont("Helvetica-Bold", 8)
+            c.setFont("Georgia-Bold", 8)
             c.drawString(cols[0] + 2, y, f"{entry:03d}")
             c.setStrokeColor(LGRAY)
             c.setLineWidth(0.4)
@@ -468,9 +480,7 @@ def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_i
                 c.line(cols[i], y - 3, cols[i], y + 10)
             entry += 1
             y -= rh
-        c.setFillColor(LGRAY)
-        c.setFont("Helvetica", 6)
-        c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys}")
+        # No page number — Affinity handles pagination
         c.showPage()
         phys += 1
     return phys
@@ -484,15 +494,12 @@ def draw_notes_page(c, W, H, phys_page, gutter_in, outer_in, top_in=0.4):
     c.setFillColor(NAVY)
     c.rect(lm, H - 0.8 * inch, uw, 0.4 * inch, fill=1, stroke=0)
     c.setFillColor(white)
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont("Georgia-Bold", 12)
     c.drawString(lm + 6, H - 0.65 * inch, "NOTES / ADDITIONAL RECORDS")
     # Lined area
     y = H - 1.1 * inch
     while y > (top_in + 0.3) * inch:
         _writeline(c, lm, y, uw)
         y -= 0.32 * inch
-    # Footer
-    c.setFillColor(LGRAY)
-    c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys_page}")
+    # No page number — Affinity handles pagination
     c.showPage()
