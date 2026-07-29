@@ -143,8 +143,8 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
     uw = W - lm - rm
     RH = 16  # row height
     BAR_H = 13  # section bar height
-    BAR_GAP = 11  # gap between section bar and its content
-    SEC_GAP = 4  # gap between sections
+    BAR_GAP = 13  # gap between section bar and its content
+    SEC_GAP = 6  # gap between sections
 
     # ─── Header bar ────────────────────────────────────────────────────────────
     hb_h = 24
@@ -262,13 +262,13 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
     c.setFillColor(MGRAY)
     c.setFont("Georgia-Italic", 7)
     c.drawString(lm, y, "I certify that the signer personally appeared before me on the date stated above.")
-    y -= 16
+    y -= 20
 
-    # Seal sits above signature lines, centered in available space
+    # Seal sits to the right of signature lines
     seal_cx = (lm + uw - 38) if outer_right else (lm + 38)
-    _seal(c, seal_cx, y - 18, r=32)
+    _seal(c, seal_cx, y - 14, r=32)
 
-    # Signature fields to the left of (or beside) the seal
+    # Signature fields to the left of the seal
     sig_w = uw - 82
     sig_x = lm if outer_right else (lm + 82)
     for lbl in ["Notary Name:", "Commission # / Exp.:", "Notary Signature:"]:
@@ -279,13 +279,6 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
         _writeline(c, sig_x + lw + 4, y - 2, sig_w - lw - 6)
         y -= RH
     y -= SEC_GAP
-
-    # ─── I — Remarks ───────────────────────────────────────────────────────────
-    _section_bar(c, lm, y - BAR_H, uw, "I — REMARKS")
-    y -= BAR_H + 8
-    for _ in range(2):
-        _writeline(c, lm, y - 2, uw)
-        y -= RH
 
     # ─── Footer ────────────────────────────────────────────────────────────────
     # No page number — Affinity handles pagination
