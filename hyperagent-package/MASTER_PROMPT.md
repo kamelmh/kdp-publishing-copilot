@@ -1,8 +1,9 @@
 # HyperAgent Master Prompt — KDP Publishing Copilot
 
 ## Identity
-You are reviewing a print-ready interior PDF for a Notary Public Record Journal
-published on Amazon KDP by Meridian Press.
+You are reviewing a **master page design system** for a Notary Public Record Journal
+published on Amazon KDP by Meridian Press. This is a new skill that enables rapid
+interior layout iteration without regenerating 120+ pages each time.
 
 ## Project Overview
 - **Product:** Notary Public Record Journal
@@ -13,90 +14,127 @@ published on Amazon KDP by Meridian Press.
 - **Interior:** B&W (black and white)
 - **Paper:** White
 - **Entries:** 110 pre-numbered notarial act records
+- **Design:** Light grey section bars (#E8E8E8), professional minimal style
 
 ## Files Provided
+
+### Master Pages (NEW — for design review)
+| File | Purpose |
+|------|---------|
+| `pdfs/master-left.pdf` | Left page template (verso, gutter on right) |
+| `pdfs/master-right.pdf` | Right page template (recto, gutter on left) |
+| `renders/master-left-001.png` | Visual preview of left page |
+| `renders/master-right-001.png` | Visual preview of right page |
+
+### Skill Package (NEW)
+| File | Purpose |
+|------|---------|
+| `skills/master-pages/SKILL.md` | Complete skill documentation |
+| `skills/master-pages/scripts/master_page_generator.py` | Standalone generator script |
 
 ### PDFs
 | File | Purpose |
 |------|---------|
-| `pdfs/interior.pdf` | Main review target — 120pp enhanced interior |
+| `pdfs/interior.pdf` | Full 120pp interior (reference) |
 | `pdfs/cover-wrap-green.pdf` | Official green/gold cover (reference) |
-| `pdfs/cover-wrap-burgundy.pdf` | Alternate burgundy cover (reference) |
 
 ### Documentation
 | File | Purpose |
 |------|---------|
 | `docs/MASTER_REFERENCE.md` | Complete project specs, royalty, metadata |
-| `docs/INTERIOR_ANALYSIS.md` | Full technical analysis (fonts, layout, structure) |
-| `docs/FIXES_APPLIED.md` | All 7 fixes we applied to the interior |
+| `docs/HYPERAGENT_THREAD_CONTEXT.md` | Previous review context |
 
 ### Assets
 | File | Purpose |
 |------|---------|
 | `assets/front_titled_green.png` | Cover front image |
 | `assets/imprint_lockup_green.png` | Meridian Press logo |
-| `assets/seal-scales.png` | Official seal emblem |
 
 ---
 
 ## Your Tasks
 
-### Task 1: Interior Enhancement Review
-Review `pdfs/interior.pdf` and provide:
+### Task 1: Master Pages Skill Review
 
-**A. Visual Quality Assessment**
-- Is the typography professional enough for Amazon KDP?
-- Are the margins appropriate for a 6×9 paperback?
-- Is the contrast/readability sufficient?
-- Any spacing issues?
+Review the **master-pages** skill package and provide:
 
-**B. Content Enhancement Suggestions**
-- Should we add a "Notary Public Oath" page before instructions?
-- Should we add a "Quick Reference Card" for common fees?
-- Should we add "State Requirements Summary" pages?
-- Any other content additions?
+**A. Skill Architecture**
+- Is the SKILL.md clear and complete?
+- Does the command structure make sense?
+- Are the design tokens well-documented?
+- Is the workflow (design → approval → generation) logical?
 
-**C. Brand Consistency**
-- Does the Meridian Press branding work on entry pages?
-- Is the seal/thumbprint layout balanced?
-- Any suggestions for the header/footer design?
+**B. Code Quality**
+- Review `scripts/master_page_generator.py`
+- Is it standalone (no dependencies on other skills)?
+- Are the helper functions clean and reusable?
+- Is the CLI interface intuitive?
+- Any bugs or edge cases?
 
-**D. KDP Compliance Check**
-- Verify page count is even (120 ✓)
-- Verify no bleed required for interior
-- Verify margins meet KDP minimums
-- Any issues that would cause upload rejection?
+**C. Design System**
+- Are the design tokens (colors, spacing) well-organized?
+- Is the left/right page mirroring correct?
+- Are the section labels consistent?
+- Any alignment issues visible in the PNG renders?
 
-**E. Final Recommendations**
-- List top 3 improvements to make before publishing
+**D. Documentation Quality**
+- Is the SKILL.md comprehensive enough for another agent to use?
+- Are the examples clear?
+- Is the troubleshooting section helpful?
+- Any missing information?
+
+**E. Recommendations**
+- List top 3 improvements to the skill
 - Rate overall quality (1-10)
 - Any critical issues?
 
 ---
 
-### Task 2: Cover Enhancement Review
-Review `pdfs/cover-wrap-green.pdf` and provide:
+### Task 2: Interior Design Review
 
-**A. Visual Impact**
-- Does the green/gold colorway work for a notary journal?
-- Is the typography hierarchy clear?
-- Is the seal emblem properly positioned?
+Review the master page renders (`renders/master-left-001.png`, `renders/master-right-001.png`):
 
-**B. KDP Compliance**
-- Verify wrap dimensions (12.58 × 9.25 in)
-- Verify spine width (0.3302" for 120pp)
-- Verify bleed (0.125" on all edges)
-- Check for text in safe zone (0.25" from trim)
+**A. Visual Quality**
+- Is the typography professional for Amazon KDP?
+- Are the light grey bars (#E8E8E8) clean and readable?
+- Is the contrast sufficient?
+- Any spacing issues?
 
-**C. Content**
-- Is the back cover copy compelling?
-- Is the barcode placement correct?
-- Any missing elements?
+**B. Layout & Alignment**
+- Are labels aligned with their writelines?
+- Are checkboxes consistently positioned?
+- Is the thumbprint/seal placement balanced?
+- Do left/right pages mirror correctly?
+
+**C. KDP Compliance**
+- Do margins meet KDP minimums?
+- Is the footer/page number positioned correctly?
+- Any issues that would cause upload rejection?
 
 **D. Final Recommendations**
-- List top 3 improvements to make before publishing
+- List top 3 improvements before publishing
 - Rate overall quality (1-10)
 - Any critical issues?
+
+---
+
+### Task 3: Integration Assessment
+
+**A. Skill Composability**
+- Can this skill be used independently?
+- Does it integrate well with `kdp-print`?
+- Could it be extended for other book types (lined, grid, blank)?
+
+**B. GitHub Readiness**
+- Is the skill package repo-ready?
+- Are the file paths clean?
+- Any hardcoded paths that need fixing?
+- Is the README adequate?
+
+**C. Cross-Tool Compatibility**
+- Could this work in Claude GUI?
+- Could it work in OpenCode?
+- Any platform-specific issues?
 
 ---
 
@@ -105,7 +143,7 @@ Review `pdfs/cover-wrap-green.pdf` and provide:
 |-------|-------|
 | Title | Notary Public Record Journal |
 | Subtitle | Official Log of Notarial Acts |
-| Author | Oumkeltoum Djerjour |
+| Author | Meridian Press |
 | Imprint | Meridian Press |
 | Language | English |
 | Category 1 | Books > Law > Law Practice > General |
@@ -126,14 +164,33 @@ Please provide your analysis in this structure:
 ```markdown
 # HyperAgent Review Report
 
-## Interior Enhancement
+## Master Pages Skill
+### Skill Architecture
+[Your assessment]
+
+### Code Quality
+[Your assessment]
+
+### Design System
+[Your assessment]
+
+### Documentation Quality
+[Your assessment]
+
+### Final Recommendations
+1. [Top improvement]
+2. [Second improvement]
+3. [Third improvement]
+
+**Overall Rating:** [X/10]
+
+---
+
+## Interior Design
 ### Visual Quality
 [Your assessment]
 
-### Content Suggestions
-[Your suggestions]
-
-### Brand Consistency
+### Layout & Alignment
 [Your assessment]
 
 ### KDP Compliance
@@ -148,27 +205,25 @@ Please provide your analysis in this structure:
 
 ---
 
-## Cover Enhancement
-### Visual Impact
+## Integration Assessment
+### Skill Composability
 [Your assessment]
 
-### KDP Compliance
-[Your check]
-
-### Content
+### GitHub Readiness
 [Your assessment]
 
-### Final Recommendations
-1. [Top improvement]
-2. [Second improvement]
-3. [Third improvement]
-
-**Overall Rating:** [X/10]
+### Cross-Tool Compatibility
+[Your assessment]
 
 ---
 
 ## Critical Issues (if any)
 [List any blocking issues]
+
+---
+
+## Suggested Next Steps
+[What should we do after this review?]
 ```
 
 ---
@@ -183,3 +238,15 @@ Please provide your analysis in this structure:
 - **Paper:** White (0.002252"/page)
 - **Interior:** B&W
 - **Cover:** Full color (RGB, 300 DPI)
+
+## Design Tokens
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `BAR_COLOR` | `#E8E8E8` | Light grey section bars |
+| `BAR_TEXT_COLOR` | `#444444` | Dark grey text on bars |
+| `HEADER_BG` | `#F5F5F5` | Very light grey headers |
+| `ACCENT_LINE` | `#CCCCCC` | Subtle accent lines |
+| `DGRAY` | `#333333` | Primary text |
+| `MGRAY` | `#666666` | Secondary text |
+| `FOOTER_BASELINE` | `21` | Page number y-position |
+| `FOOTER_GUARD` | `36` | Min distance from bottom |
