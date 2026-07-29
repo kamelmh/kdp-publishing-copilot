@@ -42,6 +42,14 @@ Upload `interior.pdf` + one cover wrap to KDP; follow `PUBLISHING_PLAYBOOK.md`.
 - **Interior:** premium one-entry-per-page (sections A–I, 1" thumbprint, seal, index) with mirrored gutter margins.
 - **Cover generator:** fixed the crash (missing spine-px key) and the printed-guides bug; added gradient scrims + a swappable vector `--emblem` overlay.
 
+## KDP Account
+
+- **Holder:** Oumkeltoum Djerjour
+- **Email:** kaprikika8@gmail.com
+- **Account ID:** A2JDT3KR1A59T5
+- **Tax:** Validated (30% US withholding)
+- **Payment:** Check payments
+
 ## Regenerate anything
 ```bash
 pip install reportlab pymupdf Pillow
