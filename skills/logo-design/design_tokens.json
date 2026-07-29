@@ -1,0 +1,38 @@
+{
+  "_comment": "Calibrated design artifacts for the KDP Publishing Copilot. Single source of truth for brand palette, typography, and how emblems are placed on covers. Consumed by logo_design.py (emblem generation) and kdp_print.py (cover assembly).",
+  "brand": {
+    "navy": "#1B2A4A",
+    "navy_deep": "#0F1B33",
+    "gold": "#C9A227",
+    "steel": "#3A5A8C",
+    "paper": "#FFFFFF",
+    "ink": "#1A1A1A",
+    "light_gray": "#B8C0CC"
+  },
+  "typography": {
+    "title": "serif — Times-Bold (built-in) or Libre Baskerville if bundled",
+    "body": "sans — Helvetica"
+  },
+  "emblem": {
+    "default_motif": "seal-scales",
+    "motifs": ["seal-scales", "seal-star", "seal-quill", "monogram"],
+    "front_scale": 0.34,
+    "front_y_ratio": 0.42,
+    "min_clear_in": 0.5,
+    "export_dpi": 300,
+    "transparent": true,
+    "gold": "#C9A227"
+  },
+  "cover": {
+    "bleed_in": 0.125,
+    "scrim_top_alpha": 0.42,
+    "scrim_bottom_alpha": 0.60,
+    "safe_margin_in": 0.5,
+    "barcode_clear_zone": "lower-right of back cover (~2in x 1.2in)"
+  },
+  "trims": {
+    "6x9":    {"cover_px": [3774, 2775], "spine_in_120pp": 0.3302},
+    "5x8":    {"note": "compute exact values via: kdp_print.py specs --size 5x8 --pages N"},
+    "8.5x11": {"note": "compute exact values via: kdp_print.py specs --size 8.5x11 --pages N"}
+  }
+}
