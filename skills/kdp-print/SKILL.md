@@ -8,10 +8,30 @@ description: >
   Use for KDP interior/cover PDFs, spine/bleed/gutter math, and paperback pricing.
 ---
 
-# KDP Print Skill (v2.2)
+# KDP Print Skill (v3.0)
 
 Print-ready interiors and full cover wraps for Amazon KDP low-content books, plus a spec/royalty
 calculator. Pure Python (ReportLab + Pillow); English; no external fonts required; all-vector output.
+
+## Architecture
+
+**Single source of truth:** `entry_page.py` contains ALL layout functions. `kdp_print.py` imports
+from it — never draw layout directly. `preflight.py` verifies output. This avoids duplicate code
+that silently diverges.
+
+```
+skills/kdp-print/
+├── entry_page.py     # SINGLE SOURCE: draw_entry_page, draw_cover_page, draw_instructions_page,
+│                     #   draw_index_pages, draw_notes_page, design tokens, helpers
+├── kdp_print.py      # CLI entry point + production generator (imports from entry_page.py)
+├── preflight.py      # 27-check verifier + text assertions (run before every upload)
+├── render_pages.py   # Render individual pages as PNGs via PyMuPDF
+└── SKILL.md          # This file
+```
+
+### Shared source with master-pages skill
+`skills/master-pages/scripts/master_page_generator.py` also imports from `entry_page.py` for
+consistency. Both generator scripts share identical layout functions.
 
 ## Requirements
 ```bash
@@ -38,26 +58,26 @@ python kdp_print.py cover --front bg.png --size 6x9 --pages 120 \
   --output cover-wrap.pdf
 ```
 
-## Print-safety features (v2.2 — each fixes a real, shipped defect)
+## Print-safety features (v3.0 — each fixes a real, shipped defect)
 
 ### 1. Footer collision guard
 ```python
 FOOTER_BASELINE = 21   # page-number baseline (0.29" ink clearance — above KDP's 0.25" min)
 FOOTER_GUARD    = 36   # nothing bottom-anchored may sit below this
 ```
-Every page number uses `FOOTER_BASELINE` (previously index/notes pages used 14.4 pt = 0.20″, **under
-the KDP minimum**). Bottom-anchored blocks are laid out *up* from `FOOTER_GUARD`, so a box can never
-overlap the page number. Verified result: bottom margin **0.287″** on all pages.
+Every page number uses `FOOTER_BASELINE`. Bottom-anchored blocks are laid out *up* from
+`FOOTER_GUARD`, so a box can never overlap the page number. Verified: bottom margin **0.287″**
+on all pages.
 
 ### 2. Inset bars — no ink at the trim edge
-All decorative bars (title-page rule + disclaimer, instructions header, index header, notes header)
-are drawn `c.rect(lm, y, uw, h)` — **never** `c.rect(0, y, W, h)`. On a **no-bleed** interior, ink
-running to the trim edge gets cut by ±0.0625″ trim variance, producing white slivers or uneven bars.
-Verified: **0 pages** with colored ink at any trim edge.
+All decorative bars are drawn `c.rect(lm, y, uw, h)` — **never** `c.rect(0, y, W, h)`. On a
+no-bleed interior, ink running to the trim edge gets cut by ±0.0625″ trim variance, producing
+white slivers or uneven bars. Verified: **0 pages** with colored ink at any trim edge.
 
 ### 3. Six-column index
-`No. | Date | Signer Name | Doc Type | Act Type | Fee` — column x-offsets `(0, 0.45, 1.30, 2.65, 3.65,
-4.65)"` summing to the 5.2″ text block. "Doc Type" is what buyers reach for most when auditing records.
+`No. | Date | Signer Name | Doc Type | Act Type | Fee` — column x-offsets `(0, 0.45, 1.30, 2.65,
+3.65, 4.65)"` summing to the 5.2″ text block. "Doc Type" is what buyers reach for most when
+auditing records.
 
 ### 4. Reference boxes on the instructions page
 Two bordered boxes rendered by the internal `_refbox(bottom, rows, title)` helper, both anchored
@@ -67,21 +87,23 @@ above `FOOTER_GUARD`:
 - **TYPICAL FEE SCHEDULE (US)** — acknowledgment, oath/affirmation, jurat, copy certification,
   signature witnessing, proof of execution
 
-Box height is computed from row count (`HDR + rows*ROW + PAD`), so adding a state or fee act resizes
-the box automatically instead of overflowing the page.
-
 ### 5. Adaptive spine text
 ```python
 SPINE_SAFE = 0.0625 * inch                          # KDP max print shift per fold
 size = min(8.0, (spine - 2 * SPINE_SAFE) * 0.9)     # cap 8pt, never breach the safe zone
 ```
-Replaces a hard-coded 10 pt that left only 0.062″ clearance — exactly KDP's shift tolerance, so a
-worst-case shift could push spine text onto the front or back panel. At 120 pp this resolves to 8 pt
-with **0.089″ / 0.087″** clearance, and it self-scales for thinner/thicker books.
+Self-scales for thinner/thicker books. At 120 pp this resolves to 8 pt with 0.087″ clearance.
 
-### 6. PDF metadata
-`setTitle` / `setAuthor` / `setSubject` / `setKeywords` / `setCreator` are set on the canvas (KDP reads
-these; blank `untitled` / `anonymous` values look unprofessional in the Previewer).
+### 6. Page-2 clearance
+The first entry page has its box bottom at 40.0pt while the page-number top is at 27.5pt
+(+12.5pt clearance) — prevents the entry box from colliding with the page number.
+
+### 7. PDF metadata
+`setTitle` / `setAuthor` / `setSubject` / `setKeywords` / `setCreator` are set on the canvas.
+
+### 8. Parameterized margins
+`_margins_for_page_raw(page_num, trim_w, trim_h, gutter)` supports master-page use with
+arbitrary trim dimensions while sharing identical logic with `entry_page.py`.
 
 ## KDP specs (verified 2026, baked in)
 | Spec | Rule |
@@ -145,6 +167,18 @@ no box below the footer guard · no text straddling a box border.
 Cover: opens · single page · wrap size · spine width · front/back text safe zone · spine fold
 clearance · **PROOF-file detection** · barcode zone clear.
 
+**Text assertions** (for repeatable QA of specific content):
+```bash
+# Verify required content present
+python preflight.py --interior interior.pdf --size 6x9 \
+  --expect-text "STATE-SPECIFIC" --expect-text "FEE SCHEDULE" \
+  --expect-text "Doc Type"
+
+# Verify prohibited content absent
+python preflight.py --cover cover-wrap.pdf --size 6x9 \
+  --forbid-text "MERIDIAN PRESS"
+```
+
 Two checks worth calling out:
 - **PROOF-file detection** — scans for magenta guide ops and fails if found. Uploading the proof by
   mistake is the single easiest way to ship a ruined cover; this makes it impossible to miss.
@@ -153,12 +187,16 @@ Two checks worth calling out:
 
 Margins are measured from **visible ink** at `--dpi` (default 300), never from font-metric bounding
 boxes — bbox includes empty descender space and reports margins ~0.03″ pessimistically, which
-produces false failures. (Learned the hard way: a "0.217″" bbox reading was really 0.247″ of ink.)
+produces false failures.
 
 Exit codes: `0` = cleared, `1` = at least one FAIL. Warnings never fail the run.
 After a clean preflight, still run **KDP Previewer** — it catches press-side issues no local tool sees.
 
 ## Change history
+- **v3.0** — consolidated architecture: single source of truth in `entry_page.py` (all layout
+  functions shared with `master-pages` skill); deleted `generate_improved_interior.py`; fixed
+  index regression (12→114 entries); fixed page-2 collision (40pt vs 27.5pt); added text
+  assertions; deleted stale verification scripts; standardized gutter to 0.5″.
 - **v2.2** — footer guard + unified page-number baseline; inset all bars; 6-column index; state &
   fee reference boxes; adaptive spine text; PDF metadata.
 - **v2.1** — gradient scrims; `--emblem` overlay; `--text` color.
@@ -166,4 +204,4 @@ After a clean preflight, still run **KDP Previewer** — it catches press-side i
   removed printed guides from the upload file; corrected the royalty model.
 
 ## Pairs with
-`logo-design` (calibrated emblems + design tokens) · `book-illustration-concepts` (cover/illustration concepts).
+`logo-design` (calibrated emblems + design tokens) · `book-illustration-concepts` (cover/illustration concepts) · `master-pages` (recto/verso template generator).
