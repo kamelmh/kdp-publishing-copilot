@@ -105,17 +105,17 @@ def calculate_specs(trim_size: str, page_count: int, paper: str = "white") -> di
     }
 
 
-# ─── Drawing helpers (interior) ───────────────────────────────────────────────
-FOOTER_BASELINE = 21   # page-number baseline (0.25" = KDP minimum bottom margin)
-FOOTER_GUARD = 36      # nothing bottom-anchored may sit below this (collision guard)
+# ─── Drawing helpers (interior) — imported from entry_page.py ─────────────────
+# Single source of truth: entry_page.py
+from entry_page import (
+    draw_entry_page, draw_cover_page, draw_instructions_page,
+    draw_index_pages, draw_notes_page, draw_page_number,
+    NAVY, STEEL, DGRAY, MGRAY, LGRAY,
+    FOOTER_BASELINE, FOOTER_GUARD,
+)
 
-NAVY = HexColor("#1B2A4A")
-STEEL = HexColor("#3A5A8C")
-DGRAY = HexColor("#333333")
-MGRAY = HexColor("#666666")
-LGRAY = HexColor("#B8C0CC")
 
-
+# ─── Legacy helper aliases (used by draw_notary_entry) ────────────────────────
 def _writeline(c, x, y, w):
     c.setStrokeColor(LGRAY); c.setLineWidth(0.5)
     c.line(x, y, x + w, y)
@@ -162,284 +162,11 @@ def _margins_for_page(phys_page: int, gutter_in: float, outer_in: float):
     return o, g, False          # verso / left-hand page, outer edge on left
 
 
-# ─── Notary entry page ────────────────────────────────────────────────────────
+# ─── Notary entry page — legacy wrapper ────────────────────────────────────────
 def draw_notary_entry(c, W, H, entry_no, total, phys_page, gutter_in, outer_in,
                       top_in=0.4, bottom_in=0.4):
-    lm, rm, outer_right = _margins_for_page(phys_page, gutter_in, outer_in)
-    top = top_in * inch
-    uw = W - lm - rm
-    RH = 16  # row height
-
-    # Header bar
-    hb_h = 24
-    y = H - top - hb_h
-    c.setFillColor(NAVY); c.rect(lm, y, uw, hb_h, fill=1, stroke=0)
-    c.setFillColor(white); c.setFont("Helvetica-Bold", 10)
-    c.drawString(lm + 6, y + 8, "NOTARIAL ACT RECORD")
-    c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(lm + uw - 6, y + 8, f"Entry No. {entry_no:03d}")
-    y -= 12
-
-    # A — Date & Time
-    _section_bar(c, lm, y - 13, uw, "A — Date & Time"); y -= 13 + 6
-    c.setFillColor(black); c.setFont("Helvetica", 8.5)
-    c.drawString(lm, y, "Date:"); _writeline(c, lm + 30, y - 2, 120)
-    c.drawString(lm + 165, y, "Time:"); _writeline(c, lm + 195, y - 2, 55)
-    _checkbox(c, lm + 258, y - 1); c.drawString(lm + 269, y, "AM")
-    _checkbox(c, lm + 292, y - 1); c.drawString(lm + 303, y, "PM")
-    y -= RH + 3
-
-    # B — Type of Notarial Act
-    _section_bar(c, lm, y - 13, uw, "B — Type of Notarial Act"); y -= 13 + 6
-    c.setFillColor(black); c.setFont("Helvetica", 8)
-    row1 = ["Acknowledgment", "Oath / Affirmation", "Copy Certification"]
-    cx = lm
-    for a in row1:
-        _checkbox(c, cx, y - 1); c.drawString(cx + 11, y, a)
-        cx += 11 + c.stringWidth(a, "Helvetica", 8) + 16
-    y -= RH
-    row2 = ["Signature Witnessing", "Jurat"]
-    cx = lm
-    for a in row2:
-        _checkbox(c, cx, y - 1); c.drawString(cx + 11, y, a)
-        cx += 11 + c.stringWidth(a, "Helvetica", 8) + 16
-    _checkbox(c, cx, y - 1); c.drawString(cx + 11, y, "Other:")
-    _writeline(c, cx + 11 + c.stringWidth("Other:", "Helvetica", 8) + 4, y - 2, lm + uw - (cx + 55))
-    y -= RH + 3
-
-    # C — Document Information
-    _section_bar(c, lm, y - 13, uw, "C — Document Information"); y -= 13 + 6
-    for lbl in ["Document Type:", "Document Date / No. of Pages:", "Description / Title:"]:
-        c.setFillColor(black); c.setFont("Helvetica", 8.5)
-        c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, lm + lw + 4, y - 2, uw - lw - 6); y -= RH
-    y -= 3
-
-    # D — Signer Information
-    _section_bar(c, lm, y - 13, uw, "D — Signer Information"); y -= 13 + 6
-    for lbl in ["Full Name:", "Address:", "ID Type / Number / Exp.:", "Signer's Signature:"]:
-        c.setFillColor(black); c.setFont("Helvetica", 8.5)
-        c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, lm + lw + 4, y - 2, uw - lw - 6); y -= RH
-    y -= 3
-
-    # E — Witness (inner side)  +  F — Thumbprint (outer edge), fixed-height band
-    e_top = y
-    ew = uw * 0.58
-    ex = lm if outer_right else (lm + uw - ew)      # witness block on inner side
-    _section_bar(c, ex, e_top - 13, ew, "E — Witness (if applicable)")
-    thumb = 72                                       # KDP min 1" (72pt)
-    thumb_x = (lm + uw - thumb) if outer_right else lm
-    _thumbprint(c, thumb_x, e_top - 15 - thumb, thumb)
-    yw = e_top - 13 - 8
-    for lbl in ["Witness Name:", "Signature:"]:
-        c.setFillColor(black); c.setFont("Helvetica", 8.5)
-        c.drawString(ex, yw, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, ex + lw + 4, yw - 2, ew - lw - 6); yw -= RH
-    y = e_top - 98                                   # clear the 72pt thumbprint + label
-
-    # G — Fees
-    _section_bar(c, lm, y - 13, uw, "G — Fees"); y -= 13 + 6
-    c.setFillColor(black); c.setFont("Helvetica", 8.5)
-    c.drawString(lm, y, "Fee Charged: $"); _writeline(c, lm + 78, y - 2, 80)
-    cx = lm + 175
-    for p in ["Cash", "Check", "Elec.", "Waived"]:
-        _checkbox(c, cx, y - 1); c.drawString(cx + 11, y, p)
-        cx += 11 + c.stringWidth(p, "Helvetica", 8.5) + 12
-    y -= RH + 3
-
-    # H — Notary Certification & Signature  (+ seal on outer side)
-    _section_bar(c, lm, y - 13, uw, "H — Notary Certification & Signature"); y -= 13 + 6
-    c.setFillColor(MGRAY); c.setFont("Helvetica-Oblique", 7)
-    c.drawString(lm, y, "I certify that the signer personally appeared before me on the date stated above.")
-    y -= 14
-    seal_cx = (lm + uw - 34) if outer_right else (lm + 34)
-    _seal(c, seal_cx, y - 22, r=28)
-    sig_w = uw - 76  # leave room for seal
-    sig_x = lm if outer_right else (lm + 76)
-    for lbl in ["Notary Name:", "Commission # / Exp.:", "Notary Signature:"]:
-        c.setFillColor(black); c.setFont("Helvetica", 8.5)
-        c.drawString(sig_x, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, sig_x + lw + 4, y - 2, sig_w - lw - 6); y -= RH
-    y -= 3
-
-    # I — Remarks
-    _section_bar(c, lm, y - 13, uw, "I — Remarks"); y -= 13 + 8
-    for _ in range(3):
-        _writeline(c, lm, y - 2, uw); y -= RH
-
-    # footer page number (kept ~0.25" off the trim edge)
-    c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys_page}")
-    c.showPage()
-
-
-def draw_cover_page(c, W, H, meta):
-    lm = 0.7 * inch
-    c.setFillColor(white); c.rect(0, 0, W, H, fill=1, stroke=0)
-    # top rule (INSET — never edge-to-edge on a no-bleed interior)
-    c.setFillColor(NAVY); c.rect(lm, H - 0.45 * inch, W - 2 * lm, 0.12 * inch, fill=1, stroke=0)
-    c.setFillColor(NAVY); c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(W / 2, H - 1.7 * inch, "NOTARY PUBLIC")
-    c.drawCentredString(W / 2, H - 2.1 * inch, "RECORD JOURNAL")
-    c.setFillColor(STEEL); c.setFont("Helvetica-Oblique", 11)
-    c.drawCentredString(W / 2, H - 2.5 * inch, "Official Log of Notarial Acts")
-    # seal
-    _seal(c, W / 2, H - 3.5 * inch, r=48)
-    # fields
-    y = H - 4.7 * inch
-    c.setFillColor(black); c.setFont("Helvetica", 10)
-    for lbl in ["Notary's Full Name:", "Commission Number:", "State / Jurisdiction:",
-                "Office / Employer:", "Commission Expires:"]:
-        c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 10)
-        _writeline(c, lm + lw + 6, y - 2, W - lm - (lm + lw + 6)); y -= 0.42 * inch
-    # volume line
-    c.drawString(lm, y, "Volume _______ of _______")
-    c.drawRightString(W - lm, y, "Year: __________"); y -= 0.5 * inch
-    # disclaimer bar (INSET)
-    c.setFillColor(NAVY); c.rect(lm, 0.6 * inch, W - 2 * lm, 0.75 * inch, fill=1, stroke=0)
-    c.setFillColor(white); c.setFont("Helvetica-Oblique", 7.5)
-    c.drawCentredString(W / 2, 1.02 * inch, "This journal is the exclusive property of the notary named above and is")
-    c.drawCentredString(W / 2, 0.86 * inch, "maintained in compliance with applicable state law.")
-    c.showPage()
-
-
-def _para(c, x, y, width, head, body, lead=14, size=9.5):
-    """Bold lead-in head + body text, word-wrapped within `width`. Returns next y."""
-    c.setFont("Helvetica-Bold", size); c.setFillColor(NAVY)
-    c.drawString(x, y, head)
-    hw = c.stringWidth(head + "  ", "Helvetica-Bold", size)
-    c.setFont("Helvetica", size); c.setFillColor(black)
-    startx, avail, line, cy = x + hw, width - hw, "", y
-    for w in body.split():
-        t = (line + " " + w).strip()
-        if c.stringWidth(t, "Helvetica", size) <= avail:
-            line = t
-        else:
-            c.drawString(startx, cy, line)
-            cy -= lead; startx = x; avail = width; line = w
-    if line:
-        c.drawString(startx, cy, line)
-    return cy - lead - 7
-
-
-def draw_instructions_page(c, W, H):
-    lm = 0.65 * inch
-    uw = W - 2 * lm
-    c.setFillColor(white); c.rect(0, 0, W, H, fill=1, stroke=0)
-    c.setFillColor(NAVY); c.rect(lm, H - 0.9 * inch, uw, 0.5 * inch, fill=1, stroke=0)   # INSET
-    c.setFillColor(white); c.setFont("Helvetica-Bold", 14)
-    c.drawString(lm + 6, H - 0.72 * inch, "How to Use This Journal")
-    items = [
-        ("Sequential numbering.", "Entries are pre-numbered from 001 onward. Never skip, remove, or reorder a page. Sequential numbering deters tampering and satisfies most state record-keeping requirements."),
-        ("One act per entry.", "Record a single notarial act on each numbered page. Complete every applicable field at the time of the act, in permanent ink."),
-        ("Identification.", "Note the signer's ID type, number, and expiration date. Capture the signer's right thumbprint in the box on the outer edge when your state requires it."),
-        ("Fees.", "Record the fee charged, or mark it Waived, to stay within your state's fee schedule."),
-        ("When full.", "Store completed journals securely for your state's retention period (often 7 to 10 years). Begin a new volume and update the Volume ___ of ___ line on the cover."),
-        ("Index.", "Use the summary index at the back of this journal to locate entries quickly."),
-    ]
-    y = H - 1.45 * inch
-    for head, body in items:
-        y = _para(c, lm, y, uw, head, body)
-
-    # ---- reference boxes, anchored UP from a hard footer guard ----
-    # FOOTER_GUARD guarantees nothing bottom-anchored can collide with the page number.
-    ROW, HDR, PAD = 13, 18, 8
-
-    states = [
-        ("California:", "Thumbprint required. Journal required by law. 4-year retention."),
-        ("Florida:", "Thumbprint optional. No journal requirement (recommended)."),
-        ("New York:", "No journal requirement. 10-year retention recommended."),
-        ("Texas:", "No journal requirement. 5-year retention recommended."),
-        ("Illinois:", "No journal requirement. 5-year retention recommended."),
-        ("Pennsylvania:", "No journal requirement. 10-year retention recommended."),
-    ]
-    fees = [
-        ("Acknowledgment:", "$5 - $15"), ("Oath / Affirmation:", "$5 - $10"),
-        ("Jurat:", "$5 - $15"), ("Copy Certification:", "$5 - $10"),
-        ("Signature Witnessing:", "$5 - $15"), ("Proof of Execution:", "$5 - $20"),
-    ]
-
-    def _refbox(bottom, rows, title):
-        h = HDR + len(rows) * ROW + PAD
-        c.setFillColor(HexColor("#EDF2F8")); c.setStrokeColor(NAVY); c.setLineWidth(1)
-        c.rect(lm, bottom, uw, h, fill=1, stroke=1)
-        c.setFillColor(NAVY); c.setFont("Helvetica-Bold", 9.5)
-        c.drawString(lm + 10, bottom + h - 14, title)
-        ty = bottom + h - HDR - 12
-        for label, val in rows:
-            c.setFillColor(black); c.setFont("Helvetica-Bold", 7.5)
-            c.drawString(lm + 18, ty, label)
-            lw = c.stringWidth(label, "Helvetica-Bold", 7.5)
-            c.setFont("Helvetica", 7.5)
-            c.drawString(lm + 18 + lw + 5, ty, val)
-            ty -= ROW
-        return h
-
-    fee_bottom = FOOTER_GUARD + 4                     # 40pt — clears the page number
-    fee_h = _refbox(fee_bottom, fees, "TYPICAL FEE SCHEDULE (US)")
-    state_bottom = fee_bottom + fee_h + 14            # 14pt gap between boxes
-    _refbox(state_bottom, states, "STATE-SPECIFIC REQUIREMENTS")
-
-    c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, FOOTER_BASELINE, "2")
-    c.showPage()
-
-
-def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_in, top_in=0.4):
-    per_page = 28
-    entry = 1
-    phys = start_phys_page
-    while entry <= total_entries:
-        lm, rm, _ = _margins_for_page(phys, gutter_in, outer_in)
-        uw = W - lm - rm
-        c.setFillColor(NAVY); c.rect(lm, H - 0.85 * inch, uw, 0.45 * inch, fill=1, stroke=0)  # INSET
-        c.setFillColor(white); c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(lm + uw / 2, H - 0.68 * inch, "JOURNAL INDEX / SUMMARY")
-        # 6 columns: No. / Date / Signer Name / Doc Type / Act Type / Fee  (fits uw = 5.2")
-        cols = [lm + x * inch for x in (0, 0.45, 1.30, 2.65, 3.65, 4.65)]
-        hdrs = ["No.", "Date", "Signer Name", "Doc Type", "Act Type", "Fee"]
-        y = H - 1.15 * inch
-        c.setFont("Helvetica-Bold", 8); c.setFillColor(STEEL)
-        for i, hd in enumerate(hdrs):
-            c.drawString(cols[i] + 2, y, hd)
-        y -= 4
-        c.setStrokeColor(STEEL); c.setLineWidth(0.8); c.line(lm, y, lm + uw, y); y -= 15
-        rh = (y - FOOTER_GUARD) / per_page
-        for _ in range(per_page):
-            if entry > total_entries:
-                break
-            c.setFillColor(black); c.setFont("Helvetica-Bold", 8)
-            c.drawString(cols[0] + 2, y, f"{entry:03d}")
-            c.setStrokeColor(LGRAY); c.setLineWidth(0.4)
-            c.line(lm, y - 3, lm + uw, y - 3)
-            for i in range(1, len(cols)):
-                c.setStrokeColor(HexColor("#E2E6EC")); c.setLineWidth(0.4)
-                c.line(cols[i], y - 3, cols[i], y + 10)
-            entry += 1; y -= rh
-        c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-        c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys}")
-        c.showPage(); phys += 1
-    return phys
-
-
-def draw_notes_page(c, W, H, phys_page, gutter_in, outer_in, top_in=0.4):
-    lm, rm, _ = _margins_for_page(phys_page, gutter_in, outer_in)
-    uw = W - lm - rm
-    c.setFillColor(NAVY); c.rect(lm, H - 0.8 * inch, uw, 0.4 * inch, fill=1, stroke=0)   # INSET
-    c.setFillColor(white); c.setFont("Helvetica-Bold", 12)
-    c.drawString(lm + 6, H - 0.65 * inch, "NOTES / ADDITIONAL RECORDS")
-    y = H - 1.1 * inch
-    while y > (top_in + 0.3) * inch:
-        _writeline(c, lm, y, uw); y -= 0.32 * inch
-    c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys_page}")
-    c.showPage()
+    """Legacy wrapper — delegates to draw_entry_page from entry_page.py."""
+    draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=gutter_in, outer_in=outer_in)
 
 
 def generate_notary_interior(output_path, trim_size="6x9", entries=110, total_pages=None):
@@ -458,11 +185,11 @@ def generate_notary_interior(output_path, trim_size="6x9", entries=110, total_pa
     c.setSubject("Official Log of Notarial Acts")
     c.setKeywords("notary journal, notarial acts, record keeping")
     c.setCreator("KDP Print Skill v2.2")
-    draw_cover_page(c, W, H, {})          # page 1
+    draw_cover_page(c, W, H)              # page 1 (meta param ignored by entry_page version)
     draw_instructions_page(c, W, H)       # page 2
     phys = 3
     for e in range(1, entries + 1):
-        draw_notary_entry(c, W, H, e, entries, phys, gutter, outer)
+        draw_entry_page(c, W, H, e, phys, gutter_in=gutter, outer_in=outer)
         phys += 1
     phys = draw_index_pages(c, W, H, entries, phys, gutter, outer)
     if total_pages:

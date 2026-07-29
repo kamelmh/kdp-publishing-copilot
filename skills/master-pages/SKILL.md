@@ -105,9 +105,9 @@ Both pages share identical layout structure:
 ### Single Source of Truth
 ```
 skills/kdp-print/entry_page.py       ← SHARED layout module
-├── generate_improved_interior.py     ← imports from entry_page
+├── kdp_print.py                     ← imports from entry_page (interior generator)
 └── master-pages/scripts/
-    └── master_page_generator.py      ← imports from entry_page
+    └── master_page_generator.py     ← imports from entry_page
 ```
 
 Both generators call `draw_entry_page()` from `entry_page.py`. Design changes in one
@@ -128,10 +128,10 @@ python skills/master-pages/scripts/master_page_generator.py
 ### 2. Approval Phase
 ```bash
 # Once masters look good, generate full interior
-python skills/kdp-print/generate_improved_interior.py
+python skills/kdp-print/kdp_print.py interior --type notary --size 6x9 --entries 110 --total-pages 120 --output interior.pdf
 
 # Run preflight
-python skills/kdp-print/preflight.py --interior interior_improved.pdf --size 6x9
+python skills/kdp-print/preflight.py --interior interior.pdf --size 6x9
 ```
 
 ### 3. Upload Phase
