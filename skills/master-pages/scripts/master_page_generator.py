@@ -33,31 +33,31 @@ def generate_master_pages(output_dir, entry_count=110):
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    left_pdf = os.path.join(output_dir, "master-left.pdf")
-    right_pdf = os.path.join(output_dir, "master-right.pdf")
+    recto_pdf = os.path.join(output_dir, "master-recto.pdf")
+    verso_pdf = os.path.join(output_dir, "master-verso.pdf")
 
-    # Left master = Page 3 = ODD = RECTO (gutter on LEFT)
-    cl = canvas.Canvas(left_pdf, pagesize=(TRIM_W, TRIM_H))
-    cl.setTitle("Master Left Page (Recto — Page 3)")
-    cl.setAuthor("Meridian Press")
-    cl.setSubject("Design Template — Left Page")
-    cl.setCreator("Master Pages Skill v1.0")
-    draw_entry_page(cl, TRIM_W, TRIM_H, entry_no=1, phys_page=3)
-    cl.save()
-
-    # Right master = Page 4 = EVEN = VERSO (gutter on RIGHT)
-    cr = canvas.Canvas(right_pdf, pagesize=(TRIM_W, TRIM_H))
-    cr.setTitle("Master Right Page (Verso — Page 4)")
+    # Recto master = Page 3 = ODD = right-hand page (gutter on LEFT)
+    cr = canvas.Canvas(recto_pdf, pagesize=(TRIM_W, TRIM_H))
+    cr.setTitle("Master Recto Page (Page 3)")
     cr.setAuthor("Meridian Press")
-    cr.setSubject("Design Template — Right Page")
+    cr.setSubject("Design Template — Right-hand Page")
     cr.setCreator("Master Pages Skill v1.0")
-    draw_entry_page(cr, TRIM_W, TRIM_H, entry_no=2, phys_page=4)
+    draw_entry_page(cr, TRIM_W, TRIM_H, entry_no=1, phys_page=3)
     cr.save()
 
+    # Verso master = Page 4 = EVEN = left-hand page (gutter on RIGHT)
+    cv = canvas.Canvas(verso_pdf, pagesize=(TRIM_W, TRIM_H))
+    cv.setTitle("Master Verso Page (Page 4)")
+    cv.setAuthor("Meridian Press")
+    cv.setSubject("Design Template — Left-hand Page")
+    cv.setCreator("Master Pages Skill v1.0")
+    draw_entry_page(cv, TRIM_W, TRIM_H, entry_no=2, phys_page=4)
+    cv.save()
+
     print(f"Master pages generated:")
-    print(f"  Left (recto, p3):  {left_pdf}")
-    print(f"  Right (verso, p4): {right_pdf}")
-    return left_pdf, right_pdf
+    print(f"  Recto (p3, gutter LEFT):  {recto_pdf}")
+    print(f"  Verso (p4, gutter RIGHT): {verso_pdf}")
+    return recto_pdf, verso_pdf
 
 
 def render_pdf_to_png(pdf_path, output_dir, prefix="page"):
@@ -108,28 +108,28 @@ def main():
 
     if args.png_only:
         # Render existing PDFs
-        left_pdf = os.path.join(output_dir, "master-left.pdf")
-        right_pdf = os.path.join(output_dir, "master-right.pdf")
+        recto_pdf = os.path.join(output_dir, "master-recto.pdf")
+        verso_pdf = os.path.join(output_dir, "master-verso.pdf")
         render_dir = os.path.join(output_dir, "renders")
 
-        if not os.path.exists(left_pdf):
-            print(f"ERROR: {left_pdf} not found. Run without --png-only first.")
+        if not os.path.exists(recto_pdf):
+            print(f"ERROR: {recto_pdf} not found. Run without --png-only first.")
             sys.exit(1)
 
         print("Rendering master pages to PNG...")
-        render_pdf_to_png(left_pdf, render_dir, prefix="master-left")
-        render_pdf_to_png(right_pdf, render_dir, prefix="master-right")
+        render_pdf_to_png(recto_pdf, render_dir, prefix="master-recto")
+        render_pdf_to_png(verso_pdf, render_dir, prefix="master-verso")
         print(f"\nDone! Review PNGs in: {render_dir}")
     else:
         # Generate master PDFs
-        left_pdf, right_pdf = generate_master_pages(output_dir, args.entries)
+        recto_pdf, verso_pdf = generate_master_pages(output_dir, args.entries)
 
         if not args.pdf_only:
             # Also render to PNG
             render_dir = os.path.join(output_dir, "renders")
             print("\nRendering to PNG...")
-            render_pdf_to_png(left_pdf, render_dir, prefix="master-left")
-            render_pdf_to_png(right_pdf, render_dir, prefix="master-right")
+            render_pdf_to_png(recto_pdf, render_dir, prefix="master-recto")
+            render_pdf_to_png(verso_pdf, render_dir, prefix="master-verso")
             print(f"\nDone! Review PNGs in: {render_dir}")
 
 

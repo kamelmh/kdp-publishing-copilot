@@ -50,7 +50,7 @@ def _margins_for_page(phys_page):
 
 def _writeline(c, x, y, w):
     """Draw a light gray writing line."""
-    c.setStrokeColor(HexColor("#CCCCCC"))
+    c.setStrokeColor(ACCENT_LINE)
     c.setLineWidth(0.4)
     c.line(x, y, x + w, y)
 
@@ -208,7 +208,7 @@ def draw_entry_page(c, W, H, entry_no, phys_page):
     thumb = 72
     thumb_x = (lm + uw - thumb) if outer_right else lm
     thumb_y = e_top - 15 - thumb
-    _section_bar(c, thumb_x, e_top - 13, thumb, "F — THUMBPRINT")
+    _section_bar(c, thumb_x, e_top - 13, thumb, "F — THUMB")
     _thumbprint(c, thumb_x, thumb_y, thumb)
     y = e_top - 98
 
