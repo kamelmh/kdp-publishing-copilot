@@ -2,41 +2,32 @@
 """
 Improved Notary Public Record Journal - Interior Generator
 Fixes all issues identified in INTERIOR_ANALYSIS.md
+
+Layout is defined in entry_page.py (single source of truth).
+This file handles cover, instructions, index, notes, and full generation.
 """
 
 import os
 import sys
-sys.path.insert(0, os.path.dirname(__file__))
 
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor, black, white, Color
-from reportlab.lib.utils import ImageReader
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 
-# ─── Colors ──────────────────────────────────────────────────────────────────
+# Import from single source of truth
+from entry_page import (
+    TRIM_W, TRIM_H, GUTTER, OUTER, TOP_MARGIN, BOTTOM_MARGIN,
+    FOOTER_BASELINE, FOOTER_GUARD,
+    DGRAY, MGRAY, LGRAY, BAR_COLOR, BAR_TEXT_COLOR, HEADER_BG, ACCENT_LINE,
+    _margins_for_page, _writeline, _checkbox, _section_bar, _thumbprint, _seal,
+    draw_page_number, draw_entry_page
+)
+
+# ─── Legacy color aliases (used by cover/instructions pages) ──────────────────
 NAVY = HexColor("#1B2A4A")
 STEEL = HexColor("#3A5A8C")
-DGRAY = HexColor("#333333")
-MGRAY = HexColor("#666666")
-LGRAY = HexColor("#B8C0CC")
-GREEN = HexColor("#2D5A27")  # Meridian Press green
+GREEN = HexColor("#2D5A27")
 GOLD = HexColor("#D4AF37")
-
-# ─── Professional Design Colors (light grey, minimal) ────────────────────────
-BAR_COLOR = HexColor("#E8E8E8")      # Light grey for section bars
-BAR_TEXT_COLOR = HexColor("#444444")  # Dark grey text on bars
-HEADER_BG = HexColor("#F5F5F5")      # Very light grey for headers
-ACCENT_LINE = HexColor("#CCCCCC")    # Subtle accent lines
-
-# ─── KDP Spec Constants ──────────────────────────────────────────────────────
-TRIM_W = 6.0 * inch
-TRIM_H = 9.0 * inch
-GUTTER = 0.5 * inch
-OUTER = 0.3 * inch
-TOP_MARGIN = 0.4 * inch
-BOTTOM_MARGIN = 0.5 * inch  # Increased to clear KDP 0.25" minimum
 
 
 def _writeline(c, x, y, w):
@@ -46,63 +37,7 @@ def _writeline(c, x, y, w):
     c.line(x, y, x + w, y)
 
 
-def _checkbox(c, x, y, s=8):
-    """Draw a checkbox."""
-    c.setStrokeColor(DGRAY)
-    c.setLineWidth(0.7)
-    c.rect(x, y, s, s, fill=0, stroke=1)
-
-
-def _section_bar(c, x, y, w, title, h=13):
-    """Draw a section header bar — light grey, professional."""
-    c.setFillColor(BAR_COLOR)
-    c.rect(x, y, w, h, fill=1, stroke=0)
-    c.setFillColor(BAR_TEXT_COLOR)
-    c.setFont("Helvetica-Bold", 8)
-    c.drawString(x + 5, y + 3.5, title.upper())
-
-
-def _seal(c, cx, cy, r=30):
-    """Draw official seal circle."""
-    c.setStrokeColor(DGRAY)
-    c.setLineWidth(1)
-    c.setDash(4, 3)
-    c.circle(cx, cy, r, fill=0, stroke=1)
-    c.setDash()
-    c.setFillColor(MGRAY)
-    c.setFont("Helvetica", 6.5)
-    c.drawCentredString(cx, cy - 3, "OFFICIAL")
-    c.drawCentredString(cx, cy - 11, "SEAL")
-
-
-def _thumbprint(c, x, y, s=64):
-    """Draw thumbprint box."""
-    c.setStrokeColor(DGRAY)
-    c.setLineWidth(1)
-    c.rect(x, y, s, s, fill=0, stroke=1)
-    c.setFillColor(MGRAY)
-    c.setFont("Helvetica", 6)
-    c.drawCentredString(x + s / 2, y + s / 2 + 3, "RIGHT")
-    c.drawCentredString(x + s / 2, y + s / 2 - 6, "THUMB")
-    c.setFont("Helvetica", 5.5)
-    c.drawCentredString(x + s / 2, y - 8, "Signer's Right Thumbprint")
-
-
-def _margins_for_page(phys_page):
-    """Return (left_margin, right_margin, outer_is_right)."""
-    if phys_page % 2 == 1:  # recto
-        return GUTTER, OUTER, True
-    return OUTER, GUTTER, False
-
-
 # Logo function removed — HyperAgent found broken rendering on B&W interior
-
-
-def draw_page_number(c, W, phys_page):
-    """Draw page number at bottom center."""
-    c.setFillColor(LGRAY)
-    c.setFont("Helvetica", 8)
-    c.drawCentredString(W / 2, 18, f"{phys_page}")
 
 
 def draw_cover_page(c, W, H):
@@ -282,153 +217,6 @@ def draw_instructions_page(c, W, H):
     c.showPage()
 
 
-def draw_notary_entry(c, W, H, entry_no, total, phys_page):
-    """Draw a single notary entry page."""
-    lm, rm, outer_right = _margins_for_page(phys_page)
-    top = TOP_MARGIN
-    uw = W - lm - rm
-    RH = 16  # row height
-    
-    # Header bar — subtle grey (inset from edges)
-    hb_h = 24
-    y = H - top - hb_h
-    c.setFillColor(HEADER_BG)
-    c.rect(lm, y, uw, hb_h, fill=1, stroke=0)
-    c.setFillColor(DGRAY)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(lm + 6, y + 8, "NOTARIAL ACT RECORD")
-    c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(lm + uw - 6, y + 8, f"Entry No. {entry_no:03d}")
-    y -= 12
-    
-    # A — Date & Time (aligned layout)
-    _section_bar(c, lm, y - 13, uw, "A — Date & Time")
-    y -= 13 + 6
-    c.setFillColor(DGRAY)
-    c.setFont("Helvetica", 8.5)
-    # Date row — aligned
-    c.drawString(lm, y, "Date:")
-    _writeline(c, lm + 45, y - 2, 130)
-    c.drawString(lm + 190, y, "Time:")
-    _writeline(c, lm + 220, y - 2, 60)
-    _checkbox(c, lm + 290, y - 1)
-    c.drawString(lm + 301, y, "AM")
-    _checkbox(c, lm + 324, y - 1)
-    c.drawString(lm + 335, y, "PM")
-    y -= RH + 3
-    
-    # B — Type of Notarial Act (aligned checkboxes)
-    _section_bar(c, lm, y - 13, uw, "B — Type of Notarial Act")
-    y -= 13 + 6
-    c.setFillColor(DGRAY)
-    c.setFont("Helvetica", 8)
-    row1 = ["Acknowledgment", "Oath / Affirmation", "Copy Certification"]
-    cx = lm
-    for a in row1:
-        _checkbox(c, cx, y - 1)
-        c.drawString(cx + 11, y, a)
-        cx += 11 + c.stringWidth(a, "Helvetica", 8) + 18
-    y -= RH
-    row2 = ["Signature Witnessing", "Jurat"]
-    cx = lm
-    for a in row2:
-        _checkbox(c, cx, y - 1)
-        c.drawString(cx + 11, y, a)
-        cx += 11 + c.stringWidth(a, "Helvetica", 8) + 18
-    _checkbox(c, cx, y - 1)
-    c.drawString(cx + 11, y, "Other:")
-    _writeline(c, cx + 11 + c.stringWidth("Other:", "Helvetica", 8) + 6, y - 2, lm + uw - cx - 60)
-    y -= RH + 3
-    
-    # C — Document Information (aligned with consistent line start)
-    _section_bar(c, lm, y - 13, uw, "C — Document Information")
-    y -= 13 + 6
-    for lbl in ["Document Type:", "Document Date / No. of Pages:", "Description / Title:"]:
-        c.setFillColor(DGRAY)
-        c.setFont("Helvetica", 8.5)
-        c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, lm + lw + 6, y - 2, uw - lw - 8)
-        y -= RH
-    y -= 3
-    
-    # D — Signer Information (aligned with consistent line start)
-    _section_bar(c, lm, y - 13, uw, "D — Signer Information")
-    y -= 13 + 6
-    for lbl in ["Full Name:", "Address:", "ID Type / Number / Exp.:", "Signer's Signature:"]:
-        c.setFillColor(DGRAY)
-        c.setFont("Helvetica", 8.5)
-        c.drawString(lm, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, lm + lw + 6, y - 2, uw - lw - 8)
-        y -= RH
-    y -= 3
-    
-    # E — Witness + F — Thumbprint
-    e_top = y
-    ew = uw * 0.58
-    ex = lm if outer_right else (lm + uw - ew)
-    _section_bar(c, ex, e_top - 13, ew, "E — Witness (if applicable)")
-    thumb = 72
-    thumb_x = (lm + uw - thumb) if outer_right else lm
-    _thumbprint(c, thumb_x, e_top - 15 - thumb, thumb)
-    yw = e_top - 13 - 8
-    for lbl in ["Witness Name:", "Signature:"]:
-        c.setFillColor(black)
-        c.setFont("Helvetica", 8.5)
-        c.drawString(ex, yw, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, ex + lw + 4, yw - 2, ew - lw - 6)
-        yw -= RH
-    y = e_top - 98
-    
-    # G — Fees
-    _section_bar(c, lm, y - 13, uw, "G — Fees")
-    y -= 13 + 6
-    c.setFillColor(black)
-    c.setFont("Helvetica", 8.5)
-    c.drawString(lm, y, "Fee Charged: $")
-    _writeline(c, lm + 78, y - 2, 80)
-    cx = lm + 175
-    for p in ["Cash", "Check", "Elec.", "Waived"]:
-        _checkbox(c, cx, y - 1)
-        c.drawString(cx + 11, y, p)
-        cx += 11 + c.stringWidth(p, "Helvetica", 8.5) + 12
-    y -= RH + 3
-    
-    # H — Notary Certification & Signature
-    _section_bar(c, lm, y - 13, uw, "H — Notary Certification & Signature")
-    y -= 13 + 6
-    c.setFillColor(MGRAY)
-    c.setFont("Helvetica-Oblique", 7)
-    c.drawString(lm, y, "I certify that the signer personally appeared before me on the date stated above.")
-    y -= 14
-    seal_cx = (lm + uw - 34) if outer_right else (lm + 34)
-    _seal(c, seal_cx, y - 22, r=28)
-    sig_w = uw - 76
-    sig_x = lm if outer_right else (lm + 76)
-    for lbl in ["Notary Name:", "Commission # / Exp.:", "Notary Signature:"]:
-        c.setFillColor(black)
-        c.setFont("Helvetica", 8.5)
-        c.drawString(sig_x, y, lbl)
-        lw = c.stringWidth(lbl, "Helvetica", 8.5)
-        _writeline(c, sig_x + lw + 4, y - 2, sig_w - lw - 6)
-        y -= RH
-    y -= 3
-    
-    # I — Remarks
-    _section_bar(c, lm, y - 13, uw, "I — Remarks")
-    y -= 13 + 8
-    for _ in range(3):
-        _writeline(c, lm, y - 2, uw)
-        y -= RH
-    
-    # Footer page number
-    draw_page_number(c, W, phys_page)
-    
-    c.showPage()
-
-
 def draw_index_pages(c, W, H, total_entries, start_phys_page):
     """Draw index pages with "Document Type" column added."""
     per_page = 28
@@ -538,7 +326,7 @@ def generate_improved_interior(output_path, entries=110, total_pages=120):
     c.setTitle("Notary Public Record Journal")
     c.setAuthor("Meridian Press")
     c.setSubject("Official Log of Notarial Acts")
-    c.setCreator("KDP Print Skill v2.1")
+    c.setCreator("KDP Print Skill v2.2")
     c.setKeywords("notary journal, notarial acts, record keeping")
     
     # Page 1: Cover page with metadata
@@ -547,10 +335,10 @@ def generate_improved_interior(output_path, entries=110, total_pages=120):
     # Page 2: Instructions with state-specific requirements and fee schedule
     draw_instructions_page(c, TRIM_W, TRIM_H)
     
-    # Pages 3-112: 110 notary entries
+    # Pages 3-112: 110 notary entries (uses single source of truth)
     phys = 3
     for e in range(1, entries + 1):
-        draw_notary_entry(c, TRIM_W, TRIM_H, e, entries, phys)
+        draw_entry_page(c, TRIM_W, TRIM_H, e, phys)
         phys += 1
     
     # Pages 113-116: Index with Document Type column
@@ -567,103 +355,6 @@ def generate_improved_interior(output_path, entries=110, total_pages=120):
     return output_path, phys - 1
 
 
-def generate_master_pages(output_dir):
-    """
-    Generate master page pair (left + right) for design review.
-    Like InDesign master pages — one verso (left), one recto (right).
-    Left page: gutter on right, outer edge on left
-    Right page: gutter on left, outer edge on right
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    
-    left_pdf = os.path.join(output_dir, "master-left.pdf")
-    right_pdf = os.path.join(output_dir, "master-right.pdf")
-    
-    # Left master page (verso — odd page, gutter on RIGHT)
-    cl = canvas.Canvas(left_pdf, pagesize=(TRIM_W, TRIM_H))
-    cl.setTitle("Master Left Page (Verso)")
-    cl.setAuthor("Meridian Press")
-    draw_notary_entry(cl, TRIM_W, TRIM_H, entry_no=1, total=110, phys_page=3)
-    cl.save()
-    
-    # Right master page (recto — even page, gutter on LEFT)
-    cr = canvas.Canvas(right_pdf, pagesize=(TRIM_W, TRIM_H))
-    cr.setTitle("Master Right Page (Recto)")
-    cr.setAuthor("Meridian Press")
-    draw_notary_entry(cr, TRIM_W, TRIM_H, entry_no=2, total=110, phys_page=4)
-    cr.save()
-    
-    print(f"Master pages generated:")
-    print(f"  Left (verso):  {left_pdf}")
-    print(f"  Right (recto): {right_pdf}")
-    return left_pdf, right_pdf
-
-
-def render_pdf_pages(pdf_path, output_dir, page_indices=None, prefix="page"):
-    """
-    Render PDF pages to PNGs for visual review.
-    Requires PyMuPDF (fitz).
-    """
-    try:
-        import fitz
-    except ImportError:
-        print("ERROR: PyMuPDF not installed. Run: pip install PyMuPDF")
-        return []
-    
-    os.makedirs(output_dir, exist_ok=True)
-    doc = fitz.open(pdf_path)
-    
-    if page_indices is None:
-        page_indices = range(len(doc))
-    
-    rendered = []
-    for i in page_indices:
-        if i >= len(doc):
-            break
-        page = doc[i]
-        # Render at 200 DPI for crisp preview
-        mat = fitz.Matrix(200/72, 200/72)
-        pix = page.get_pixmap(matrix=mat)
-        out_path = os.path.join(output_dir, f"{prefix}-{i+1:03d}.png")
-        pix.save(out_path)
-        rendered.append(out_path)
-        print(f"  Rendered: {out_path}")
-    
-    doc.close()
-    return rendered
-
-
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Notary Interior Generator")
-    parser.add_argument("--masters", action="store_true",
-                        help="Generate master pages only (left + right)")
-    parser.add_argument("--render", action="store_true",
-                        help="Render master pages to PNG for review")
-    parser.add_argument("--full", action="store_true",
-                        help="Generate full 120-page interior")
-    parser.add_argument("--entries", type=int, default=110,
-                        help="Number of entries (default: 110)")
-    parser.add_argument("--pages", type=int, default=120,
-                        help="Total pages (default: 120)")
-    args = parser.parse_args()
-    
-    base_dir = r"C:\Users\Admin\Projects\active\kdp-publishing-copilot\books\notary-log-book"
-    
-    if args.masters or args.render:
-        # Generate master pages
-        master_dir = os.path.join(base_dir, "master-pages")
-        left_pdf, right_pdf = generate_master_pages(master_dir)
-        
-        if args.render:
-            # Render to PNGs
-            render_dir = os.path.join(master_dir, "renders")
-            print("\nRendering master pages to PNG...")
-            render_pdf_pages(left_pdf, render_dir, page_indices=[0], prefix="master-left")
-            render_pdf_pages(right_pdf, render_dir, page_indices=[0], prefix="master-right")
-            print(f"\nDone! Review renders in: {render_dir}")
-    else:
-        # Generate full interior
-        output = os.path.join(base_dir, "interior_improved.pdf")
-        generate_improved_interior(output, entries=args.entries, total_pages=args.pages)
+    output = r"C:\Users\Admin\Projects\active\kdp-publishing-copilot\books\notary-log-book\interior_improved.pdf"
+    generate_improved_interior(output, entries=110, total_pages=120)
