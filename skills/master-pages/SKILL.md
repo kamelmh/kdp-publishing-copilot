@@ -1,22 +1,22 @@
 ---
 name: master-pages
 description: >
-  Master page system for KDP low-content book design. Generates left (verso) and right (recto) 
-  template pages for visual review before full interior generation. Like InDesign master pages — 
-  iterate on layout, alignment, colors, and spacing without regenerating 120+ pages each time. 
-  Includes PNG rendering for quick visual inspection. Use when designing or refining interior 
-  layouts for print-ready books.
+  Master page system for KDP low-content book design. Generates recto (right-hand) and verso 
+  (left-hand) template pages for visual review before full interior generation. Like InDesign 
+  master pages — iterate on layout, alignment, colors, and spacing without regenerating 120+ 
+  pages each time. Includes PNG rendering for quick visual inspection. Use when designing or 
+  refining interior layouts for print-ready books.
 ---
 
-# Master Pages Skill (v1.0)
+# Master Pages Skill (v1.1)
 
-Design-time master page generator for KDP book interiors. Produces left/right template pair
+Design-time master page generator for KDP book interiors. Produces recto/verso template pair
 for layout review before committing to full 120-page generation.
 
 ## Why Master Pages?
 
 Regenerating a 120-page PDF + rendering PNGs takes ~30 seconds per iteration.
-Master pages reduce this to ~2 seconds for a single left/right pair.
+Master pages reduce this to ~2 seconds for a single recto/verso pair.
 Design changes can be reviewed in under 5 seconds.
 
 ## Requirements
@@ -26,43 +26,47 @@ pip install reportlab pymupdf   # pymupdf only for PNG rendering
 
 ## Commands
 ```bash
-# Generate master pages (left + right) + render to PNG
-python generate_improved_interior.py --masters --render
+# Generate master pages (recto + verso) + render to PNG
+python skills/master-pages/scripts/master_page_generator.py
 
 # Generate master pages only (PDFs)
-python generate_improved_interior.py --masters
+python skills/master-pages/scripts/master_page_generator.py --pdf-only
 
-# Render existing PDF to PNG
-python generate_improved_interior.py --render  # (when called with a PDF)
+# Render existing PDFs to PNG only
+python skills/master-pages/scripts/master_page_generator.py --png-only
 
-# Generate full interior (after master approval)
-python generate_improved_interior.py --full --entries 110 --pages 120
-
-# Custom entry count
-python generate_improved_interior.py --masters --entries 50
+# Custom output directory
+python skills/master-pages/scripts/master_page_generator.py --output-dir /path/to/output
 ```
 
 ## Output Structure
 ```
 books/notary-log-book/master-pages/
-├── master-left.pdf        ← Page 3 template (verso, gutter on RIGHT)
-├── master-right.pdf       ← Page 4 template (recto, gutter on LEFT)
+├── master-recto.pdf       ← Page 3 template (right-hand, gutter on LEFT)
+├── master-verso.pdf       ← Page 4 template (left-hand, gutter on RIGHT)
 └── renders/
-    ├── master-left-001.png   ← Visual preview (200 DPI)
-    └── master-right-001.png  ← Visual preview (200 DPI)
+    ├── master-recto-001.png   ← Visual preview (200 DPI)
+    └── master-verso-001.png   ← Visual preview (200 DPI)
 ```
 
-## How It Works
+## Publishing Parity Convention
 
-### Left Master (Verso — odd page)
-- Gutter on RIGHT (binding edge)
-- Thumbprint on LEFT (outer edge)
+**This is critical — the skill will produce a backwards book if gotten wrong.**
+
+| Page | Type | Hand | Gutter | Thumbprint |
+|------|------|------|--------|------------|
+| Odd (3, 5, 7…) | RECTO | Right-hand | LEFT | RIGHT (outer) |
+| Even (4, 6, 8…) | VERSO | Left-hand | RIGHT | LEFT (outer) |
+
+### Recto Master (Page 3)
+- Gutter on LEFT (binding edge)
+- Thumbprint on RIGHT (outer edge)
 - Seal on RIGHT
 - Entry number: 001
 
-### Right Master (Recto — even page)
-- Gutter on LEFT (binding edge)
-- Thumbprint on RIGHT (outer edge)
+### Verso Master (Page 4)
+- Gutter on RIGHT (binding edge)
+- Thumbprint on LEFT (outer edge)
 - Seal on LEFT
 - Entry number: 002
 
@@ -73,20 +77,22 @@ Both pages share identical layout structure:
 - **C:** Document Information (labels with writelines)
 - **D:** Signer Information (labels with writelines)
 - **E:** Witness (if applicable)
-- **F:** Thumbprint (on outer edge)
+- **F:** THUMB (on outer edge)
 - **G:** Fees (checkboxes)
 - **H:** Notary Certification & Signature (dashed seal)
 - **I:** Remarks (ruled lines)
 
-### Design Tokens
-| Token | Value | Purpose |
-|-------|-------|---------|
-| `BAR_COLOR` | `#E8E8E8` | Light grey section bars |
-| `BAR_TEXT_COLOR` | `#444444` | Dark grey text on bars |
-| `HEADER_BG` | `#F5F5F5` | Very light grey headers |
-| `ACCENT_LINE` | `#CCCCCC` | Subtle accent lines |
-| `DGRAY` | `#333333` | Primary text color |
-| `MGRAY` | `#666666` | Secondary text |
+### Design Tokens (POD-safe)
+| Token | Value | Ink % | Purpose |
+|-------|-------|-------|---------|
+| `HEADER_BG` | `#C8C8C8` | 22% | Header bar (darkest) |
+| `BAR_COLOR` | `#DCDCDC` | 14% | Section bars |
+| `ACCENT_LINE` | `#BBBBBB` | 27% | Writelines |
+| `BAR_TEXT_COLOR` | `#333333` | — | Dark grey text on bars |
+| `DGRAY` | `#333333` | — | Primary text |
+| `MGRAY` | `#666666` | — | Secondary text |
+
+**Note:** All tints ≥12% for reliable B&W POD reproduction. Header is darker than section bars (proper hierarchy).
 
 ### Print-Safety Features (inherited from kdp-print)
 - **Footer guard:** `FOOTER_BASELINE=21`, `FOOTER_GUARD=36` — no collision with page numbers
@@ -94,13 +100,26 @@ Both pages share identical layout structure:
 - **Mirrored margins:** Gutter always on binding edge
 - **Bottom margin:** 0.287" (above KDP 0.25" minimum)
 
+## Architecture
+
+### Single Source of Truth
+```
+skills/kdp-print/entry_page.py       ← SHARED layout module
+├── generate_improved_interior.py     ← imports from entry_page
+└── master-pages/scripts/
+    └── master_page_generator.py      ← imports from entry_page
+```
+
+Both generators call `draw_entry_page()` from `entry_page.py`. Design changes in one
+automatically apply to the other. This is the guarantee that masters match the interior.
+
 ## Workflow
 
 ### 1. Design Phase
 ```bash
-# Edit generate_improved_interior.py (colors, spacing, alignment)
+# Edit entry_page.py (colors, spacing, alignment)
 # Then regenerate masters
-python generate_improved_interior.py --masters --render
+python skills/master-pages/scripts/master_page_generator.py
 
 # Review PNGs in master-pages/renders/
 # Iterate until satisfied
@@ -109,13 +128,10 @@ python generate_improved_interior.py --masters --render
 ### 2. Approval Phase
 ```bash
 # Once masters look good, generate full interior
-python generate_improved_interior.py --full --entries 110 --pages 120
+python skills/kdp-print/generate_improved_interior.py
 
 # Run preflight
-python preflight.py --interior interior_improved.pdf --size 6x9
-
-# Visual inspection
-python render_pages.py interior_improved.pdf --pages 1-5
+python skills/kdp-print/preflight.py --interior interior_improved.pdf --size 6x9
 ```
 
 ### 3. Upload Phase
@@ -127,19 +143,13 @@ python render_pages.py interior_improved.pdf --pages 1-5
 ## Integration with Other Skills
 
 ### kdp-print
-Master pages share the same layout engine as `kdp-print`'s interior generator.
-Any design change in master pages can be applied to the full interior by running `--full`.
+Master pages share the same layout engine via `entry_page.py`.
+Any design change in master pages automatically applies to the full interior.
 
 ### preflight
 Master page PDFs can be preflighted individually:
 ```bash
-python preflight.py --interior master-left.pdf --size 6x9
-```
-
-### render-pages
-Master pages use the same PNG rendering pipeline:
-```bash
-python render_pages.py master-left.pdf --pages 1
+python skills/kdp-print/preflight.py --interior master-recto.pdf --size 6x9
 ```
 
 ## HyperAgent Review Package
@@ -148,17 +158,19 @@ The `hyperagent-package/` directory contains:
 - `MASTER_PROMPT.md` — Updated prompt for reviewing master pages
 - `skills/master-pages/` — This skill
 - `pdfs/` — Master PDFs for review
-- `visual-inspection/` — PNG renders
+- `renders/` — PNG renders
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| Bars too heavy | Change `BAR_COLOR` to lighter hex (e.g. `#F0F0F0`) |
+| Bars too heavy | Change `BAR_COLOR` to darker hex (e.g. `#D0D0D0`) |
 | Text misaligned | Check `_writeline()` x-position after labels |
 | Thumbprint wrong side | Check `outer_right` logic in `_margins_for_page()` |
 | Page number missing | Check `draw_page_number()` and `FOOTER_BASELINE` |
-| PNG blurry | Increase render DPI in `render_pdf_pages()` (default 200) |
+| PNG blurry | Increase render DPI in `render_pdf_to_png()` (default 200) |
+| Gutter on wrong edge | Verify odd=recto=gutter LEFT convention |
 
 ## Change History
-- **v1.0** — Initial master page generator with left/right pair, PNG rendering, design tokens
+- **v1.1** — Fixed parity, renamed to recto/verso, POD-safe tokens, single source of truth
+- **v1.0** — Initial master page generator with left/right pair, PNG rendering
