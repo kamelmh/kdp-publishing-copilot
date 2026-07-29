@@ -106,6 +106,9 @@ def calculate_specs(trim_size: str, page_count: int, paper: str = "white") -> di
 
 
 # ─── Drawing helpers (interior) ───────────────────────────────────────────────
+FOOTER_BASELINE = 21   # page-number baseline (0.25" = KDP minimum bottom margin)
+FOOTER_GUARD = 36      # nothing bottom-anchored may sit below this (collision guard)
+
 NAVY = HexColor("#1B2A4A")
 STEEL = HexColor("#3A5A8C")
 DGRAY = HexColor("#333333")
@@ -271,15 +274,15 @@ def draw_notary_entry(c, W, H, entry_no, total, phys_page, gutter_in, outer_in,
 
     # footer page number (kept ~0.25" off the trim edge)
     c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, 18, f"{phys_page}")
+    c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys_page}")
     c.showPage()
 
 
 def draw_cover_page(c, W, H, meta):
     lm = 0.7 * inch
     c.setFillColor(white); c.rect(0, 0, W, H, fill=1, stroke=0)
-    # top rule
-    c.setFillColor(NAVY); c.rect(0, H - 0.45 * inch, W, 0.12 * inch, fill=1, stroke=0)
+    # top rule (INSET — never edge-to-edge on a no-bleed interior)
+    c.setFillColor(NAVY); c.rect(lm, H - 0.45 * inch, W - 2 * lm, 0.12 * inch, fill=1, stroke=0)
     c.setFillColor(NAVY); c.setFont("Helvetica-Bold", 22)
     c.drawCentredString(W / 2, H - 1.7 * inch, "NOTARY PUBLIC")
     c.drawCentredString(W / 2, H - 2.1 * inch, "RECORD JOURNAL")
@@ -298,8 +301,8 @@ def draw_cover_page(c, W, H, meta):
     # volume line
     c.drawString(lm, y, "Volume _______ of _______")
     c.drawRightString(W - lm, y, "Year: __________"); y -= 0.5 * inch
-    # disclaimer bar
-    c.setFillColor(NAVY); c.rect(0, 0.6 * inch, W, 0.75 * inch, fill=1, stroke=0)
+    # disclaimer bar (INSET)
+    c.setFillColor(NAVY); c.rect(lm, 0.6 * inch, W - 2 * lm, 0.75 * inch, fill=1, stroke=0)
     c.setFillColor(white); c.setFont("Helvetica-Oblique", 7.5)
     c.drawCentredString(W / 2, 1.02 * inch, "This journal is the exclusive property of the notary named above and is")
     c.drawCentredString(W / 2, 0.86 * inch, "maintained in compliance with applicable state law.")
@@ -329,9 +332,9 @@ def draw_instructions_page(c, W, H):
     lm = 0.65 * inch
     uw = W - 2 * lm
     c.setFillColor(white); c.rect(0, 0, W, H, fill=1, stroke=0)
-    c.setFillColor(NAVY); c.rect(0, H - 0.9 * inch, W, 0.5 * inch, fill=1, stroke=0)
+    c.setFillColor(NAVY); c.rect(lm, H - 0.9 * inch, uw, 0.5 * inch, fill=1, stroke=0)   # INSET
     c.setFillColor(white); c.setFont("Helvetica-Bold", 14)
-    c.drawString(lm, H - 0.72 * inch, "How to Use This Journal")
+    c.drawString(lm + 6, H - 0.72 * inch, "How to Use This Journal")
     items = [
         ("Sequential numbering.", "Entries are pre-numbered from 001 onward. Never skip, remove, or reorder a page. Sequential numbering deters tampering and satisfies most state record-keeping requirements."),
         ("One act per entry.", "Record a single notarial act on each numbered page. Complete every applicable field at the time of the act, in permanent ink."),
@@ -343,8 +346,48 @@ def draw_instructions_page(c, W, H):
     y = H - 1.45 * inch
     for head, body in items:
         y = _para(c, lm, y, uw, head, body)
+
+    # ---- reference boxes, anchored UP from a hard footer guard ----
+    # FOOTER_GUARD guarantees nothing bottom-anchored can collide with the page number.
+    ROW, HDR, PAD = 13, 18, 8
+
+    states = [
+        ("California:", "Thumbprint required. Journal required by law. 4-year retention."),
+        ("Florida:", "Thumbprint optional. No journal requirement (recommended)."),
+        ("New York:", "No journal requirement. 10-year retention recommended."),
+        ("Texas:", "No journal requirement. 5-year retention recommended."),
+        ("Illinois:", "No journal requirement. 5-year retention recommended."),
+        ("Pennsylvania:", "No journal requirement. 10-year retention recommended."),
+    ]
+    fees = [
+        ("Acknowledgment:", "$5 - $15"), ("Oath / Affirmation:", "$5 - $10"),
+        ("Jurat:", "$5 - $15"), ("Copy Certification:", "$5 - $10"),
+        ("Signature Witnessing:", "$5 - $15"), ("Proof of Execution:", "$5 - $20"),
+    ]
+
+    def _refbox(bottom, rows, title):
+        h = HDR + len(rows) * ROW + PAD
+        c.setFillColor(HexColor("#EDF2F8")); c.setStrokeColor(NAVY); c.setLineWidth(1)
+        c.rect(lm, bottom, uw, h, fill=1, stroke=1)
+        c.setFillColor(NAVY); c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(lm + 10, bottom + h - 14, title)
+        ty = bottom + h - HDR - 12
+        for label, val in rows:
+            c.setFillColor(black); c.setFont("Helvetica-Bold", 7.5)
+            c.drawString(lm + 18, ty, label)
+            lw = c.stringWidth(label, "Helvetica-Bold", 7.5)
+            c.setFont("Helvetica", 7.5)
+            c.drawString(lm + 18 + lw + 5, ty, val)
+            ty -= ROW
+        return h
+
+    fee_bottom = FOOTER_GUARD + 4                     # 40pt — clears the page number
+    fee_h = _refbox(fee_bottom, fees, "TYPICAL FEE SCHEDULE (US)")
+    state_bottom = fee_bottom + fee_h + 14            # 14pt gap between boxes
+    _refbox(state_bottom, states, "STATE-SPECIFIC REQUIREMENTS")
+
     c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, 18, "2")
+    c.drawCentredString(W / 2, FOOTER_BASELINE, "2")
     c.showPage()
 
 
@@ -355,18 +398,19 @@ def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_i
     while entry <= total_entries:
         lm, rm, _ = _margins_for_page(phys, gutter_in, outer_in)
         uw = W - lm - rm
-        c.setFillColor(NAVY); c.rect(0, H - 0.85 * inch, W, 0.45 * inch, fill=1, stroke=0)
+        c.setFillColor(NAVY); c.rect(lm, H - 0.85 * inch, uw, 0.45 * inch, fill=1, stroke=0)  # INSET
         c.setFillColor(white); c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(W / 2, H - 0.68 * inch, "JOURNAL INDEX / SUMMARY")
-        cols = [lm, lm + 0.55 * inch, lm + 1.5 * inch, lm + 3.0 * inch, lm + 4.1 * inch]
-        hdrs = ["No.", "Date", "Signer Name", "Act Type", "Fee"]
+        c.drawCentredString(lm + uw / 2, H - 0.68 * inch, "JOURNAL INDEX / SUMMARY")
+        # 6 columns: No. / Date / Signer Name / Doc Type / Act Type / Fee  (fits uw = 5.2")
+        cols = [lm + x * inch for x in (0, 0.45, 1.30, 2.65, 3.65, 4.65)]
+        hdrs = ["No.", "Date", "Signer Name", "Doc Type", "Act Type", "Fee"]
         y = H - 1.15 * inch
         c.setFont("Helvetica-Bold", 8); c.setFillColor(STEEL)
         for i, hd in enumerate(hdrs):
             c.drawString(cols[i] + 2, y, hd)
         y -= 4
         c.setStrokeColor(STEEL); c.setLineWidth(0.8); c.line(lm, y, lm + uw, y); y -= 15
-        rh = (y - (top_in * inch)) / per_page
+        rh = (y - FOOTER_GUARD) / per_page
         for _ in range(per_page):
             if entry > total_entries:
                 break
@@ -379,7 +423,7 @@ def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_i
                 c.line(cols[i], y - 3, cols[i], y + 10)
             entry += 1; y -= rh
         c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-        c.drawCentredString(W / 2, top_in * inch * 0.5, f"{phys}")
+        c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys}")
         c.showPage(); phys += 1
     return phys
 
@@ -387,14 +431,14 @@ def draw_index_pages(c, W, H, total_entries, start_phys_page, gutter_in, outer_i
 def draw_notes_page(c, W, H, phys_page, gutter_in, outer_in, top_in=0.4):
     lm, rm, _ = _margins_for_page(phys_page, gutter_in, outer_in)
     uw = W - lm - rm
-    c.setFillColor(NAVY); c.rect(0, H - 0.8 * inch, W, 0.4 * inch, fill=1, stroke=0)
+    c.setFillColor(NAVY); c.rect(lm, H - 0.8 * inch, uw, 0.4 * inch, fill=1, stroke=0)   # INSET
     c.setFillColor(white); c.setFont("Helvetica-Bold", 12)
-    c.drawString(lm, H - 0.65 * inch, "NOTES / ADDITIONAL RECORDS")
+    c.drawString(lm + 6, H - 0.65 * inch, "NOTES / ADDITIONAL RECORDS")
     y = H - 1.1 * inch
     while y > (top_in + 0.3) * inch:
         _writeline(c, lm, y, uw); y -= 0.32 * inch
     c.setFillColor(LGRAY); c.setFont("Helvetica", 6)
-    c.drawCentredString(W / 2, top_in * inch * 0.5, f"{phys_page}")
+    c.drawCentredString(W / 2, FOOTER_BASELINE, f"{phys_page}")
     c.showPage()
 
 
@@ -408,6 +452,12 @@ def generate_notary_interior(output_path, trim_size="6x9", entries=110, total_pa
     gutter = max(gutter, 0.5)
     outer = 0.3
     c = canvas.Canvas(output_path, pagesize=(W, H))
+    # --- PDF metadata (KDP reads these) ---
+    c.setTitle("Notary Public Record Journal")
+    c.setAuthor("Meridian Press")
+    c.setSubject("Official Log of Notarial Acts")
+    c.setKeywords("notary journal, notarial acts, record keeping")
+    c.setCreator("KDP Print Skill v2.2")
     draw_cover_page(c, W, H, {})          # page 1
     draw_instructions_page(c, W, H)       # page 2
     phys = 3
@@ -543,12 +593,14 @@ def build_cover_wrap(front_path, output_path, trim_size="6x9", page_count=120,
 
     # ---- SPINE ----
     c.setFillColor(bg); c.rect(spine_x0, 0, spine, CH, fill=1, stroke=0)
-    if spine >= 0.28 * inch and spine_text:
+    SPINE_SAFE = 0.0625 * inch                 # KDP max print shift per fold
+    if spine >= 2 * SPINE_SAFE + 8 and spine_text:
+        size = min(8.0, (spine - 2 * SPINE_SAFE) * 0.9)   # cap 8pt, never breach safe zone
         c.saveState()
         c.translate(spine_x0 + spine / 2, CH / 2)
         c.rotate(90)
-        c.setFillColor(text); c.setFont(title_font, 10)
-        c.drawCentredString(0, -3, spine_text)
+        c.setFillColor(text); c.setFont(title_font, size)
+        c.drawCentredString(0, -size * 0.36, spine_text)  # optical centering
         c.restoreState()
 
     # ---- BACK ----

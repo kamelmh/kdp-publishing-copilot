@@ -1,122 +1,58 @@
-# KDP Publishing Copilot
+# KDP Publishing Copilot — Project
 
-> Meridian Press — Amazon KDP Self-Publishing System
-
-## Overview
-Complete system for publishing print-ready books on Amazon KDP.
-Currently: **Notary Public Record Journal** (Book 1 of notary niche).
+Tooling and deliverables for Oumkeltoum Djerjour's Amazon KDP low-content book business.
+Rebuilt and corrected by the KDP Publishing Copilot agent.
 
 ## Structure
-
 ```
 kdp-publishing-copilot/
-├── README.md                          ← You are here
-├── docs/                              ← Documentation
-│   ├── MASTER_REFERENCE.md            ← Complete specs
-│   ├── MARKET_ANALYSIS.md             ← Competitor research
-│   ├── CLAUDE_GUI_MASTER_PROMPT.md    ← Claude GUI context
-│   ├── HYPERAGENT_MASTER_PROMPT.md    ← HyperAgent context
-│   └── ...
-│
-├── books/
-│   └── notary-log-book/               ← Final deliverables
-│       ├── interior.pdf               ← 120pp, 6x9, enhanced
-│       ├── interior_improved.pdf      ← Backup of enhanced version
-│       ├── cover-wrap-green.pdf       ← OFFICIAL cover
-│       ├── cover-wrap-burgundy.pdf    ← Alternate cover
-│       ├── cover-wrap-vector.pdf      ← Alternate cover
-│       └── PUBLISHING_PLAYBOOK.md     ← Upload walkthrough
-│
-├── skills/                            ← Python generators
-│   ├── kdp-print/
-│   │   ├── kdp_print.py              ← Main generator
-│   │   ├── generate_improved_interior.py ← Enhanced interior
-│   │   ├── verify_interior.py        ← Verification script
-│   │   └── SKILL.md                  ← Skill documentation
-│   ├── notary-journal/
-│   │   └── SKILL.md                  ← Notary journal skill
-│   ├── logo-design/
-│   │   ├── logo_design.py            ← Logo generator
-│   │   └── SKILL.md                  ← Skill documentation
-│   └── book-illustration-concepts/
-│       ├── storyboard.py             ← Storyboard generator
-│       └── SKILL.md                  ← Skill documentation
-│
-├── assets/                            ← Brand + cover assets
-│   ├── brand/                         ← Meridian Press logos
-│   ├── covers/                        ← Cover images + emblems
-│   └── social/                        ← Social media mockups
-│
-├── hyperagent-package/                ← For HyperAgent review
-│   ├── MASTER_PROMPT.md              ← Task instructions
-│   ├── pdfs/                          ← PDFs to review
-│   ├── docs/                          ← Reference docs
-│   └── assets/                        ← Visual references
-│
-└── claude-gui-package/                ← For Claude GUI review
-    ├── INTERIOR_ANALYSIS.md           ← Technical analysis
-    ├── FIXES_APPLIED.md               ← Fixes we applied
-    ├── pdfs/                          ← PDFs to review
-    ├── docs/                          ← Reference docs
-    ├── assets/                        ← Visual references
-    └── visual-inspection/             ← Rasterized pages
+├─ README.md                     ← this file
+├─ skills/
+│  ├─ kdp-print/                 ← interiors, cover wraps, specs + CORRECT royalty math
+│  │  ├─ kdp_print.py
+│  │  └─ SKILL.md
+│  ├─ logo-design/               ← calibrated vector emblems + brand tokens
+│  │  ├─ logo_design.py
+│  │  ├─ design_tokens.json
+│  │  └─ SKILL.md
+│  └─ book-illustration-concepts/← illustration/cover-concept workflow + storyboard tool
+│     ├─ storyboard.py
+│     ├─ style_bible_template.json
+│     └─ SKILL.md
+├─ books/
+│  └─ notary-log-book/           ← Book 1 (print-ready)
+│     ├─ interior.pdf            ← 120pp, upload this
+│     ├─ cover-wrap.pdf          ← AI-art navy cover (option A)
+│     ├─ cover-wrap-vector.pdf   ← calibrated vector cover (option B)
+│     ├─ cover-wrap-green.pdf    ← green/gold colorway
+│     ├─ cover-wrap-burgundy.pdf ← burgundy/cream colorway
+│     ├─ cover-wrap-PROOF.pdf    ← guides only — DO NOT upload
+│     └─ PUBLISHING_PLAYBOOK.md  ← pricing, metadata, upload checklist, tax
+└─ assets/covers/                ← front art, emblems, colorway backgrounds
 ```
 
-## Quick Start
+## Book 1 status
+Notary Public Record Journal — 6×9, 120 pages, $12.99. Imprint / pen name: **Meridian Press** (KDP account & royalties under Oumkeltoum Djerjour). Interior + covers print-ready.
+Upload `interior.pdf` + one cover wrap to KDP; follow `PUBLISHING_PLAYBOOK.md`.
 
-### 1. Review Interior
+## Key corrections baked in (vs. the earlier draft)
+- **Royalty:** Amazon paperback = 60% of list − printing (50% below the price threshold); 40% is Expanded Distribution only. NOT a flat 40%.
+- **Printing cost:** ~$1.00 + $0.012/page → ~$2.44 for 120pp (net ~$5.35 at $12.99 on Amazon).
+- **Canva canvas:** true 300 DPI full wrap = 3774×2775 px (the old "1256×925 @300 DPI" was 100 DPI).
+- **Interior:** premium one-entry-per-page (sections A–I, 1" thumbprint, seal, index) with mirrored gutter margins.
+- **Cover generator:** fixed the crash (missing spine-px key) and the printed-guides bug; added gradient scrims + a swappable vector `--emblem` overlay.
+
+## Regenerate anything
 ```bash
-# Open in HyperAgent
-Upload: hyperagent-package/
-
-# Or open in Claude GUI
-Upload: claude-gui-package/
+pip install reportlab pymupdf Pillow
+# specs + pricing
+python skills/kdp-print/kdp_print.py specs --size 6x9 --pages 120 --price 12.99
+# interior
+python skills/kdp-print/kdp_print.py interior --type notary --size 6x9 --entries 110 --total-pages 120 --output books/notary-log-book/interior.pdf
+# emblem + cover (calibrated)
+python skills/logo-design/logo_design.py --motif seal-scales --size 1200 --out emblem.png
+python skills/kdp-print/kdp_print.py cover --front bg.png --emblem emblem.png --size 6x9 --pages 120 \
+  --subtitle "Official Log of Notarial Acts" --author "Oumkeltoum Djerjour" \
+  --spine-text "NOTARY PUBLIC RECORD JOURNAL" --bg "#1B2A4A" --accent "#C9A227" --text "#FFFFFF" \
+  --output cover.pdf
 ```
-
-### 2. Upload to KDP
-```bash
-# Follow the playbook
-Open: books/notary-log-book/PUBLISHING_PLAYBOOK.md
-
-# Files to upload:
-# - interior.pdf (120pp, 6x9)
-# - cover-wrap-green.pdf (official cover)
-```
-
-### 3. Generate New Interior
-```bash
-cd skills/kdp-print
-python generate_improved_interior.py
-```
-
-## KDP Specs
-
-| Property | Value |
-|----------|-------|
-| Trim | 6" × 9" |
-| Pages | 120 |
-| Gutter | 0.5" |
-| Paper | White |
-| Interior | B&W |
-| Cover | Full color (RGB) |
-| Royalty | 60% − printing |
-| List Price | $12.99 |
-| Net Royalty | ~$2.35/sale |
-
-## Publishing Strategy
-- **Standalone titles** (not series)
-- **Catalog depth > series breadth**
-- **Target:** 5-6 notary titles before expanding
-- **Validation:** BSR < 100K = expand immediately
-
-## Next Steps
-1. ✅ Interior enhanced (7 fixes applied)
-2. ⏳ HyperAgent review (cover + interior)
-3. ⏳ KDP upload (interior + cover)
-4. ⏳ Post-launch (A+ Content, Author Central)
-
----
-
-**Publisher:** Meridian Press
-**Author:** Oumkeltoum Djerjour
-**Platform:** Amazon KDP
