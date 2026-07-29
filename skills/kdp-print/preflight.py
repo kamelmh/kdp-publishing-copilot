@@ -12,11 +12,13 @@ Usage:
     python preflight.py --cover cover.pdf --size 8.5x11 --pages 150
     python preflight.py --interior i.pdf --cover c.pdf --size 6x9 --json report.json
     python preflight.py --interior i.pdf --size 6x9 --sample 10     # every 10th page (fast)
+    python preflight.py --interior i.pdf --size 6x9 --expect-text "FEE SCHEDULE" --forbid-text "MERIDIAN PRESS"
 
 Notes:
   * Page count is auto-detected from the interior; --pages is only needed for a cover-only run.
   * Margins are measured from VISIBLE INK at --dpi (default 300). Font-metric bounding boxes
     include empty descender space and report margins ~0.03" pessimistically — don't use them.
+  * --expect-text / --forbid-text scan extracted text (case-sensitive). Repeat for multiple strings.
   * Requires: pymupdf, numpy.  (pip install pymupdf numpy)
 """
 
@@ -320,6 +322,30 @@ def check_cover(path, size, paper, pages, dpi, rep):
     d.close()
 
 
+# ─── Text content assertions ─────────────────────────────────────────────────────────────
+def check_text_assertions(path, expect, forbid, rep):
+    """Scan PDF text for expected/forbidden strings. Reports per-page locations."""
+    S = "TEXT"
+    d = fitz.open(path)
+    # Extract full text per page
+    pages_text = {}
+    for pno, p in enumerate(d, 1):
+        pages_text[pno] = p.get_text("text")
+    d.close()
+
+    # --expect-text: must appear at least once
+    for string in expect:
+        found = [pno for pno, txt in pages_text.items() if string in txt]
+        rep.chk(S, f'contains "{string}"', len(found) > 0,
+                f"found on page(s): {found}" if found else "not found anywhere")
+
+    # --forbid-text: must NOT appear
+    for string in forbid:
+        found = [pno for pno, txt in pages_text.items() if string in txt]
+        rep.chk(S, f'forbids "{string}"', len(found) == 0,
+                f"FOUND on page(s): {found}" if found else "absent (good)")
+
+
 def main():
     ap = argparse.ArgumentParser(description="KDP preflight for interior and/or cover PDFs")
     ap.add_argument("--interior")
@@ -330,6 +356,10 @@ def main():
     ap.add_argument("--dpi", type=int, default=300, help="ink-measurement DPI (default 300)")
     ap.add_argument("--sample", type=int, default=1, help="check every Nth page (default all)")
     ap.add_argument("--json", help="also write the report as JSON")
+    ap.add_argument("--expect-text", action="append", default=[],
+                    help="assert this string appears in the PDF (repeatable)")
+    ap.add_argument("--forbid-text", action="append", default=[],
+                    help="assert this string does NOT appear (repeatable)")
     a = ap.parse_args()
     if not a.interior and not a.cover:
         ap.error("provide --interior and/or --cover")
@@ -345,6 +375,11 @@ def main():
         if not os.path.exists(a.cover):
             sys.exit(f"ERROR: not found: {a.cover}")
         check_cover(a.cover, a.size, a.paper, pages, a.dpi, rep)
+
+    # Text content assertions (apply to whichever PDF was provided)
+    if a.expect_text or a.forbid_text:
+        target = a.interior or a.cover
+        check_text_assertions(target, a.expect_text, a.forbid_text, rep)
 
     rep.render()
     if a.json:
