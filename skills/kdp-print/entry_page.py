@@ -442,10 +442,11 @@ def _para(c, x, y, width, head, body, lead=14, size=9.5):
 
 
 def draw_cover_page_aff(c, W, H):
-    """Cover for Affinity import — aligns with blue margin guides exactly."""
-    LM, RM = AFF_INNER, AFF_OUTER
+    """Cover for Affinity import — content at Affinity margin positions."""
+    LM = AFF_INNER   # 0.5" from left edge
+    RM = AFF_OUTER   # 0.3" from right edge
     uw = W - LM - RM
-    y = H - AFF_TOP
+    y = H - AFF_TOP  # 0.45" from top edge
 
     TITLE = "NOTARY PUBLIC RECORD JOURNAL"
     T_SIZE = 20
