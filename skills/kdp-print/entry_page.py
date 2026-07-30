@@ -442,35 +442,35 @@ def _para(c, x, y, width, head, body, lead=14, size=9.5):
 
 
 def draw_cover_page_aff(c, W, H):
-    """Cover for Affinity import — content at Affinity margin positions."""
-    LM = AFF_INNER   # 0.5" from left edge
-    RM = AFF_OUTER   # 0.3" from right edge
-    uw = W - LM - RM
-    y = H - AFF_TOP  # 0.45" from top edge
-
-    TITLE = "NOTARY PUBLIC RECORD JOURNAL"
-    T_SIZE = 20
-    while c.stringWidth(TITLE, "Georgia-Bold", T_SIZE) > uw - 24 and T_SIZE > 14:
-        T_SIZE -= 0.5
-    band_h = T_SIZE + 20
-    band_y = y - band_h
+    """Cover for Affinity — masthead full bleed, content within margins."""
+    # Masthead extends to page edges (full bleed)
+    MASTHEAD_H = 40
+    y = H - MASTHEAD_H
     c.setFillColor(HEADER_BG)
-    c.rect(LM, band_y, uw, band_h, fill=1, stroke=0)
+    c.rect(0, y, W, MASTHEAD_H, fill=1, stroke=0)
     c.setFillColor(BAR_TEXT_COLOR)
-    c.setFont("Georgia-Bold", T_SIZE)
-    c.drawCentredString(LM + uw / 2, band_y + (band_h - T_SIZE * 0.72) / 2, TITLE)
-    y = band_y - 22
+    c.setFont("Georgia-Bold", 20)
+    c.drawCentredString(W / 2, y + 10, "NOTARY PUBLIC RECORD JOURNAL")
 
+    # Content within margins
+    LM = 0.5 * inch
+    RM = 0.3 * inch
+    uw = W - LM - RM
+    y -= 22
+
+    # Subtitle
     c.setFillColor(DGRAY)
     c.setFont("Georgia-Italic", 11)
     c.drawCentredString(LM + uw / 2, y, "Official Log of Notarial Acts")
     y -= 18
 
+    # Accent rule
     c.setStrokeColor(ACCENT_LINE)
     c.setLineWidth(0.6)
     c.line(LM + uw * 0.30, y, LM + uw * 0.70, y)
     y -= 20
 
+    # Seal + fields
     seal_r, FIELD_RH = 48, 26
     fields = [
         "Notary's Full Name:", "Commission Number:", "State / Jurisdiction:",
@@ -478,7 +478,8 @@ def draw_cover_page_aff(c, W, H):
     ]
     seal_gap = 34
     block_h = 2 * seal_r + seal_gap + len(fields) * FIELD_RH + 8 + 14
-    avail = y - (AFF_BOTTOM + 6)
+    FOOTER_GUARD = 36
+    avail = y - (FOOTER_GUARD + 6)
     y -= max(0, (avail - block_h) / 2)
 
     _seal(c, LM + uw / 2, y - seal_r, r=seal_r)
@@ -488,6 +489,7 @@ def draw_cover_page_aff(c, W, H):
         _labelled_rule(c, LM, y, uw, label, size=9.5)
         y -= FIELD_RH
 
+    # Volume / Year
     y -= 4
     c.setFillColor(DGRAY)
     c.setFont("Georgia", 9.5)
