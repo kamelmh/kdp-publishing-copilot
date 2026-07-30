@@ -337,26 +337,27 @@ def draw_entry_page(c, W, H, entry_no, phys_page, gutter_in=None, outer_in=None)
 
 def draw_cover_page(c, W, H, meta=None, phys_page=1):
     """
-    Title page: grey masthead, seal, commission fields, volume line,
-    grey disclaimer bar. No page number.
+    Title page: grey masthead, seal, commission fields, volume line.
+    Clean layout — no disclaimer bar. Title fits on one line.
+    No page number.
     """
     lm, rm, _ = _margins_for_page(phys_page)
     uw = W - lm - rm
     y = H - TOP_MARGIN
 
     # ─── Masthead: grey band containing the title ────────────────────────────
-    TITLE, T_SIZE = "NOTARY PUBLIC RECORD JOURNAL", 22
-    lines = _fit_lines(c, TITLE, "Georgia-Bold", T_SIZE, uw - 24)
-    band_h = 22 + len(lines) * (T_SIZE + 6)
+    # Title must fit on ONE line — auto-shrink if needed
+    TITLE = "NOTARY PUBLIC RECORD JOURNAL"
+    T_SIZE = 20  # fits on one line at 6×9 with 0.5/0.3 margins
+    while c.stringWidth(TITLE, "Georgia-Bold", T_SIZE) > uw - 24 and T_SIZE > 14:
+        T_SIZE -= 0.5
+    band_h = T_SIZE + 20
     band_y = y - band_h
     c.setFillColor(HEADER_BG)
     c.rect(lm, band_y, uw, band_h, fill=1, stroke=0)
     c.setFillColor(BAR_TEXT_COLOR)
     c.setFont("Georgia-Bold", T_SIZE)
-    ty = band_y + band_h - 20 - T_SIZE * 0.28
-    for ln in lines:
-        c.drawCentredString(lm + uw / 2, ty, ln)
-        ty -= T_SIZE + 6
+    c.drawCentredString(lm + uw / 2, band_y + (band_h - T_SIZE * 0.72) / 2, TITLE)
     y = band_y - 22
 
     # ─── Subtitle ────────────────────────────────────────────────────────────
@@ -369,16 +370,9 @@ def draw_cover_page(c, W, H, meta=None, phys_page=1):
     c.setStrokeColor(ACCENT_LINE)
     c.setLineWidth(0.6)
     c.line(lm + uw * 0.30, y, lm + uw * 0.70, y)
-    y -= 16
+    y -= 20
 
-    # ─── Disclaimer bar: measure first so the middle block can be centred ────
-    disc = ("This journal is the exclusive property of the notary named above and is "
-            "maintained in compliance with applicable state law.")
-    d_lines = _fit_lines(c, disc, "Georgia-Italic", 7.5, uw - 24)
-    d_h = 14 + len(d_lines) * 11
-    d_y = FOOTER_GUARD + 6
-
-    # ─── Centre the seal + fields + volume block in the space that remains ───
+    # ─── Seal + fields + volume block — centred vertically ──────────────────
     seal_r, FIELD_RH = 48, 26
     fields = [
         "Notary's Full Name:",
@@ -389,7 +383,7 @@ def draw_cover_page(c, W, H, meta=None, phys_page=1):
     ]
     seal_gap = 34
     block_h = 2 * seal_r + seal_gap + len(fields) * FIELD_RH + 8 + 14
-    avail = y - (d_y + d_h)
+    avail = y - (FOOTER_GUARD + 6)
     y -= max(0, (avail - block_h) / 2)
 
     _seal(c, lm + uw / 2, y - seal_r, r=seal_r)
@@ -409,16 +403,6 @@ def draw_cover_page(c, W, H, meta=None, phys_page=1):
     _writeline(c, lm + 116, y - 2, 52)
     c.drawRightString(lm + uw - 60, y, "Year:")
     _writeline(c, lm + uw - 56, y - 2, 56)
-
-    # ─── Disclaimer bar ──────────────────────────────────────────────────────
-    c.setFillColor(HEADER_BG)
-    c.rect(lm, d_y, uw, d_h, fill=1, stroke=0)
-    c.setFillColor(BAR_TEXT_COLOR)
-    c.setFont("Georgia-Italic", 7.5)
-    dy = d_y + d_h - 12
-    for ln in d_lines:
-        c.drawCentredString(lm + uw / 2, dy, ln)
-        dy -= 11
 
     c.showPage()
 
