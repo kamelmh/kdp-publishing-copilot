@@ -407,6 +407,16 @@ def draw_cover_page(c, W, H, meta=None, phys_page=1):
     c.showPage()
 
 
+# ─── Affinity Template versions (use Affinity's exact margins) ─────────────────
+# These functions use hard-coded Affinity margin values so content aligns
+# precisely with the blue margin guides when the PDF is imported.
+
+AFF_INNER = 0.5 * inch    # Affinity "Inner" margin
+AFF_OUTER = 0.3 * inch    # Affinity "Outer" margin
+AFF_TOP = 0.45 * inch     # Affinity "Top" margin
+AFF_BOTTOM = 0.375 * inch # Affinity "Bottom" margin
+
+
 def _para(c, x, y, width, head, body, lead=14, size=9.5):
     """Bold lead-in head + body text, word-wrapped within `width`. Returns next y."""
     c.setFont("Georgia-Bold", size)
@@ -429,6 +439,329 @@ def _para(c, x, y, width, head, body, lead=14, size=9.5):
     if line:
         c.drawString(startx, cy, line)
     return cy - lead - 7
+
+
+def draw_cover_page_aff(c, W, H):
+    """Cover for Affinity import — aligns with blue margin guides exactly."""
+    LM, RM = AFF_INNER, AFF_OUTER
+    uw = W - LM - RM
+    y = H - AFF_TOP
+
+    TITLE = "NOTARY PUBLIC RECORD JOURNAL"
+    T_SIZE = 20
+    while c.stringWidth(TITLE, "Georgia-Bold", T_SIZE) > uw - 24 and T_SIZE > 14:
+        T_SIZE -= 0.5
+    band_h = T_SIZE + 20
+    band_y = y - band_h
+    c.setFillColor(HEADER_BG)
+    c.rect(LM, band_y, uw, band_h, fill=1, stroke=0)
+    c.setFillColor(BAR_TEXT_COLOR)
+    c.setFont("Georgia-Bold", T_SIZE)
+    c.drawCentredString(LM + uw / 2, band_y + (band_h - T_SIZE * 0.72) / 2, TITLE)
+    y = band_y - 22
+
+    c.setFillColor(DGRAY)
+    c.setFont("Georgia-Italic", 11)
+    c.drawCentredString(LM + uw / 2, y, "Official Log of Notarial Acts")
+    y -= 18
+
+    c.setStrokeColor(ACCENT_LINE)
+    c.setLineWidth(0.6)
+    c.line(LM + uw * 0.30, y, LM + uw * 0.70, y)
+    y -= 20
+
+    seal_r, FIELD_RH = 48, 26
+    fields = [
+        "Notary's Full Name:", "Commission Number:", "State / Jurisdiction:",
+        "Office / Employer:", "Commission Expires:",
+    ]
+    seal_gap = 34
+    block_h = 2 * seal_r + seal_gap + len(fields) * FIELD_RH + 8 + 14
+    avail = y - (AFF_BOTTOM + 6)
+    y -= max(0, (avail - block_h) / 2)
+
+    _seal(c, LM + uw / 2, y - seal_r, r=seal_r)
+    y -= 2 * seal_r + seal_gap
+
+    for label in fields:
+        _labelled_rule(c, LM, y, uw, label, size=9.5)
+        y -= FIELD_RH
+
+    y -= 4
+    c.setFillColor(DGRAY)
+    c.setFont("Georgia", 9.5)
+    c.drawString(LM, y, "Volume")
+    _writeline(c, LM + 42, y - 2, 52)
+    c.drawString(LM + 100, y, "of")
+    _writeline(c, LM + 116, y - 2, 52)
+    c.drawRightString(LM + uw - 60, y, "Year:")
+    _writeline(c, LM + uw - 56, y - 2, 56)
+
+    c.showPage()
+
+
+def draw_entry_page_aff(c, W, H, entry_no):
+    """Entry page for Affinity import — aligns with blue margin guides exactly."""
+    lm, rm = AFF_INNER, AFF_OUTER
+    uw = W - lm - rm
+    RH = 16
+    BAR_H = 13
+    BAR_GAP = 13
+    SEC_GAP = 6
+
+    hb_h = 24
+    y = H - AFF_TOP - hb_h
+    c.setFillColor(HEADER_BG)
+    c.rect(lm, y, uw, hb_h, fill=1, stroke=0)
+    c.setFillColor(DGRAY)
+    c.setFont("Georgia-Bold", 10)
+    c.drawString(lm + 6, y + 8, "NOTARIAL ACT RECORD")
+    c.setFont("Georgia-Bold", 9)
+    c.drawRightString(lm + uw - 6, y + 8, f"Entry No. {entry_no:03d}")
+    y -= 14
+
+    _section_bar(c, lm, y - BAR_H, uw, "A — DATE & TIME")
+    y -= BAR_H + BAR_GAP
+    c.setFillColor(DGRAY)
+    c.setFont("Georgia", 8.5)
+    c.drawString(lm, y, "Date:")
+    _writeline(c, lm + 45, y - 2, 130)
+    c.drawString(lm + 190, y, "Time:")
+    _writeline(c, lm + 220, y - 2, 60)
+    _checkbox(c, lm + 290, y - 1)
+    c.drawString(lm + 301, y, "AM")
+    _checkbox(c, lm + 324, y - 1)
+    c.drawString(lm + 335, y, "PM")
+    y -= RH + SEC_GAP
+
+    _section_bar(c, lm, y - BAR_H, uw, "B — TYPE OF NOTARIAL ACT")
+    y -= BAR_H + BAR_GAP
+    c.setFillColor(DGRAY)
+    c.setFont("Georgia", 8)
+    row1 = ["Acknowledgment", "Oath / Affirmation", "Copy Certification"]
+    cx = lm
+    for a in row1:
+        _checkbox(c, cx, y - 1)
+        c.drawString(cx + 11, y, a)
+        cx += 11 + c.stringWidth(a, "Georgia", 8) + 18
+    y -= RH
+    row2 = ["Signature Witnessing", "Jurat"]
+    cx = lm
+    for a in row2:
+        _checkbox(c, cx, y - 1)
+        c.drawString(cx + 11, y, a)
+        cx += 11 + c.stringWidth(a, "Georgia", 8) + 18
+    _checkbox(c, cx, y - 1)
+    c.drawString(cx + 11, y, "Other:")
+    _writeline(c, cx + 11 + c.stringWidth("Other:", "Georgia", 8) + 6, y - 2, lm + uw - cx - 60)
+    y -= RH + SEC_GAP
+
+    _section_bar(c, lm, y - BAR_H, uw, "C — DOCUMENT INFORMATION")
+    y -= BAR_H + BAR_GAP
+    for lbl in ["Document Type:", "Document Date / No. of Pages:", "Description / Title:"]:
+        c.setFillColor(DGRAY)
+        c.setFont("Georgia", 8.5)
+        c.drawString(lm, y, lbl)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
+        _writeline(c, lm + lw + 6, y - 2, uw - lw - 8)
+        y -= RH
+    y -= SEC_GAP
+
+    _section_bar(c, lm, y - BAR_H, uw, "D — SIGNER INFORMATION")
+    y -= BAR_H + BAR_GAP
+    for lbl in ["Full Name:", "Address:", "ID Type / Number / Exp.:", "Signer's Signature:"]:
+        c.setFillColor(DGRAY)
+        c.setFont("Georgia", 8.5)
+        c.drawString(lm, y, lbl)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
+        _writeline(c, lm + lw + 6, y - 2, uw - lw - 8)
+        y -= RH
+    y -= SEC_GAP
+
+    e_top = y
+    ew = uw * 0.58
+    outer_right = True  # recto page
+    ex = lm if outer_right else (lm + uw - ew)
+    _section_bar(c, ex, e_top - BAR_H, ew, "E — WITNESS (IF APPLICABLE)")
+    yw = e_top - BAR_H - BAR_GAP
+    for lbl in ["Witness 1 Name:", "Witness 1 Signature:", "Witness 2 Name:", "Witness 2 Signature:"]:
+        c.setFillColor(DGRAY)
+        c.setFont("Georgia", 8.5)
+        c.drawString(ex, yw, lbl)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
+        _writeline(c, ex + lw + 4, yw - 2, ew - lw - 6)
+        yw -= RH
+
+    thumb = 72
+    thumb_x = (lm + uw - thumb) if outer_right else lm
+    thumb_y = e_top - 15 - thumb
+    _section_bar(c, thumb_x, e_top - BAR_H, thumb, "F — THUMB")
+    _thumbprint(c, thumb_x, thumb_y, thumb)
+    y = e_top - 118
+
+    _section_bar(c, lm, y - BAR_H, uw, "G — FEES")
+    y -= BAR_H + BAR_GAP
+    c.setFillColor(DGRAY)
+    c.setFont("Georgia", 8.5)
+    c.drawString(lm, y, "Fee Charged: $")
+    _writeline(c, lm + 78, y - 2, 80)
+    cx = lm + 175
+    for p in ["Cash", "Check", "Elec.", "Waived"]:
+        _checkbox(c, cx, y - 1)
+        c.drawString(cx + 11, y, p)
+        cx += 11 + c.stringWidth(p, "Georgia", 8.5) + 12
+    y -= RH + SEC_GAP
+
+    _section_bar(c, lm, y - BAR_H, uw, "H — NOTARY CERTIFICATION & SIGNATURE")
+    y -= BAR_H + BAR_GAP
+    c.setFillColor(MGRAY)
+    c.setFont("Georgia-Italic", 7)
+    c.drawString(lm, y, "I certify that the signer personally appeared before me on the date stated above.")
+    y -= 20
+
+    seal_cx = (lm + uw - 38) if outer_right else (lm + 38)
+    _seal(c, seal_cx, y - 14, r=32)
+
+    sig_w = uw - 82
+    sig_x = lm if outer_right else (lm + 82)
+    for lbl in ["Notary Name:", "Commission # / Exp.:", "Notary Signature:"]:
+        c.setFillColor(DGRAY)
+        c.setFont("Georgia", 8.5)
+        c.drawString(sig_x, y, lbl)
+        lw = c.stringWidth(lbl, "Georgia", 8.5)
+        _writeline(c, sig_x + lw + 4, y - 2, sig_w - lw - 6)
+        y -= RH
+    y -= SEC_GAP
+
+    c.showPage()
+
+
+def draw_instructions_page_aff(c, W, H):
+    """Instructions page for Affinity import — aligns with blue margin guides exactly."""
+    lm, rm = AFF_INNER, AFF_OUTER
+    uw = W - lm - rm
+
+    bar_h = 30
+    y = H - AFF_TOP - bar_h
+    _header_bar(c, lm, y, uw, "How to Use This Journal", size=14, h=bar_h)
+    y -= BAR_GAP + 8
+
+    items = [
+        ("Sequential numbering.", "Entries are pre-numbered from 001 onward. Never skip, "
+         "remove, or reorder a page — sequential numbering deters tampering and satisfies "
+         "most state record-keeping requirements."),
+        ("One act per entry.", "Record a single notarial act on each numbered page. Complete "
+         "every applicable field at the time of the act, in permanent ink."),
+        ("Identification.", "Note the signer's ID type, number, and expiration date. Capture "
+         "the signer's right thumbprint in the box on the outer edge when your state requires it."),
+        ("Fees.", "Record the fee charged, or mark it Waived, to stay within your state's "
+         "fee schedule."),
+        ("When full.", "Store completed journals securely for your state's retention period "
+         "(often 7 to 10 years). Begin a new volume and update the Volume ___ of ___ line."),
+        ("Index.", "Use the summary index at the back of this journal to locate entries quickly."),
+    ]
+    for head, body in items:
+        y = _para(c, lm, y, uw, head, body, lead=13, size=9.5)
+
+    ROW, HDR, PAD = 13, 20, 8
+    def _refbox(bottom, title, rows):
+        h = HDR + len(rows) * ROW + PAD
+        c.setFillColor(BOX_FILL)
+        c.setStrokeColor(BAR_TEXT_COLOR)
+        c.setLineWidth(0.8)
+        c.rect(lm, bottom, uw, h, fill=1, stroke=1)
+        c.setFillColor(BAR_TEXT_COLOR)
+        c.setFont("Georgia-Bold", 9.5)
+        c.drawString(lm + 10, bottom + h - 15, title)
+        ry = bottom + h - HDR - 11
+        for label, value in rows:
+            c.setFillColor(DGRAY)
+            c.setFont("Georgia-Bold", 7.5)
+            c.drawString(lm + 18, ry, label)
+            lw = c.stringWidth(label, "Georgia-Bold", 7.5)
+            c.setFont("Georgia", 7.5)
+            c.drawString(lm + 18 + lw + 5, ry, value)
+            ry -= ROW
+        return h
+
+    fees = [
+        ("Acknowledgment:", "$5 – $15"), ("Oath / Affirmation:", "$5 – $10"),
+        ("Jurat:", "$5 – $15"), ("Copy Certification:", "$5 – $10"),
+        ("Signature Witnessing:", "$5 – $15"), ("Proof of Execution:", "$5 – $20"),
+    ]
+    states = [
+        ("California:", "Thumbprint required. Journal required by law. 4-year retention."),
+        ("Florida:", "Thumbprint optional. No journal requirement (recommended)."),
+        ("New York:", "No journal requirement. 10-year retention recommended."),
+        ("Texas:", "No journal requirement. 5-year retention recommended."),
+        ("Illinois:", "No journal requirement. 5-year retention recommended."),
+        ("Pennsylvania:", "No journal requirement. 10-year retention recommended."),
+    ]
+    BOX_GAP = 14
+    state_h = HDR + len(states) * ROW + PAD
+    fee_h = HDR + len(fees) * ROW + PAD
+    state_bottom = y - (SEC_GAP * 3) - state_h
+    fee_bottom = state_bottom - BOX_GAP - fee_h
+    lift = max(0, (AFF_BOTTOM + 4) - fee_bottom)
+    state_bottom += lift
+    fee_bottom += lift
+    _refbox(state_bottom, "STATE-SPECIFIC REQUIREMENTS", states)
+    _refbox(fee_bottom, "TYPICAL FEE SCHEDULE (US)", fees)
+    c.showPage()
+
+
+def draw_index_page_aff(c, W, H, start_entry=1, rows=28, last_entry=None):
+    """Index page for Affinity import — aligns with blue margin guides exactly."""
+    lm, rm = AFF_INNER, AFF_OUTER
+    uw = W - lm - rm
+    bar_h = 28
+    y = H - AFF_TOP - bar_h
+    _header_bar(c, lm, y, uw, "JOURNAL INDEX / SUMMARY", size=13, h=bar_h, align="center")
+    y -= BAR_GAP + 4
+    cols = [lm + x * inch for x in INDEX_COLS_IN]
+    c.setFillColor(STEEL)
+    c.setFont("Georgia-Bold", 8)
+    for i, hd in enumerate(INDEX_HDRS):
+        c.drawString(cols[i] + 2, y, hd)
+    y -= 5
+    c.setStrokeColor(STEEL)
+    c.setLineWidth(0.8)
+    c.line(lm, y, lm + uw, y)
+    y -= 3
+    top_of_rows = y
+    row_h = (top_of_rows - AFF_BOTTOM) / rows
+    entry = start_entry
+    for i in range(rows):
+        if last_entry is not None and entry > last_entry:
+            break
+        ry = top_of_rows - (i + 1) * row_h + 4
+        c.setFillColor(DGRAY)
+        c.setFont("Georgia", 8)
+        c.drawString(cols[0] + 2, ry, f"{entry:03d}")
+        c.setStrokeColor(ROW_RULE)
+        c.setLineWidth(0.4)
+        for cx in cols[1:]:
+            c.line(cx, ry - 4, cx, ry + 9)
+        c.setStrokeColor(ACCENT_LINE)
+        c.setLineWidth(0.4)
+        c.line(lm, ry - 4, lm + uw, ry - 4)
+        entry += 1
+    c.showPage()
+    return entry
+
+
+def draw_notes_page_aff(c, W, H):
+    """Notes page for Affinity import — aligns with blue margin guides exactly."""
+    lm, rm = AFF_INNER, AFF_OUTER
+    uw = W - lm - rm
+    bar_h = 26
+    y = H - AFF_TOP - bar_h
+    _header_bar(c, lm, y, uw, "NOTES / ADDITIONAL RECORDS", size=12, h=bar_h)
+    y -= BAR_GAP + 10
+    while y > AFF_BOTTOM:
+        _writeline(c, lm, y, uw)
+        y -= NOTES_LINE_GAP
+    c.showPage()
 
 
 def draw_instructions_page(c, W, H, phys_page=2):
