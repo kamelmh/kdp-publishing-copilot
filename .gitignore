@@ -18,3 +18,11 @@ Thumbs.db
 # Temp
 *.tmp
 *.bak
+*~lock~
+
+# HyperAgent temp output
+hyperagent-output/
+hyperagent-package.zip
+
+# Affinity lock files
+*.afpub~lock~
