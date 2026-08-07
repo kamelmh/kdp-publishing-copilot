@@ -26,3 +26,5 @@ hyperagent-package.zip
 
 # Affinity lock files
 *.afpub~lock~
+*.afpub
+archive/
