@@ -1,0 +1,49 @@
+{
+  "_comment": "STYLE BIBLE — the consistency backbone for a book's illustrations. Fill this once per book, then quote its values in EVERY GenerateImage prompt and reuse the character reference_images as referenceImages. This is what keeps 24 spreads feeling like one hand drew one world.",
+  "project": "",
+  "audience": "",
+  "register": "one concrete sentence, e.g. 'gouache storybook, warm dusk palette, rounded shapes, soft paper grain'",
+  "palette": {
+    "primary": "#",
+    "secondary": "#",
+    "accent": "#",
+    "neutral": "#",
+    "notes": "3-4 colors max — limited palettes travel far better across a whole book than 10 hues"
+  },
+  "medium_texture": "e.g. gouache with visible paper grain / flat cut-paper collage / loose watercolor + ink",
+  "line_quality": "e.g. soft rounded ink outline, medium weight",
+  "lighting_rule": "e.g. warm key from upper-left, cool shadows, gentle rim light at dusk",
+  "shape_language": "e.g. rounded, friendly, no sharp points",
+  "composition_rules": [
+    "one clear focal point per spread",
+    "strong value contrast — squint: does it still read?",
+    "rule of thirds / leading lines toward the focal point"
+  ],
+  "characters": [
+    {
+      "name": "",
+      "one_line": "",
+      "silhouette_cue": "a distinct shape so the character is recognizable in outline",
+      "reference_images": ["path/to/hero_portrait.png"]
+    }
+  ],
+  "reference_kit": [
+    "hero character portrait(s) + 1-2 approved hero scenes",
+    "feed these as referenceImages into every subsequent generation"
+  ],
+  "do": [
+    "ground the look in real refs via SearchImages before inventing",
+    "cast characters with a canonical portrait FIRST (Nano Banana Pro), then reuse it",
+    "iterate by editing a chosen frame (inputImages), not by re-rolling from scratch"
+  ],
+  "dont": [
+    "bake the title or large text into AI art — set type as vector in the layout tool",
+    "let the palette sprawl past ~4 hues",
+    "change model mid-book without re-checking character consistency"
+  ],
+  "output_specs": {
+    "concept_dpi": 150,
+    "final_cover": "assemble via the kdp-print cover builder at 300 DPI with 0.125in bleed",
+    "aspect_ratio": "lock to the page/spread ratio early (e.g. 2:3 portrait, 1:1 square picture book)"
+  }
+}

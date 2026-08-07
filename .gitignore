@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.env
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Temp
+*.tmp
+*.bak
+*~lock~
+
+# HyperAgent temp output
+hyperagent-output/
+hyperagent-package.zip
+
+# Affinity lock files
+*.afpub~lock~
+*.afpub
+archive/
