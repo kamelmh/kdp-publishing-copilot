@@ -7,6 +7,13 @@ When finishing work, append an entry below.
 
 ## Recent Changes
 
+### 2026-08-16 — Chemo Journal Skill Created for Claude Desktop
+- **What:** Complete SKILL.md for Claude Desktop — consolidates research synthesis, content spec, build script, KDP metadata, and clinical standards into one actionable skill file
+- **Files:** `skills/chemo-journal/SKILL.md`
+- **Impact:** Claude Desktop can now build the full 130-page interior, handle KDP metadata, and run preflight
+- **Breaking changes:** None
+- **Alerts for other projects:** None
+
 ### 2026-08-16 — Chemo Journal Research Synthesis
 - **What:** Deep research on competitor journals, clinical standards (UKONS, PRO-CTCAE, CR-UK), design best practices, and KDP market data. Consolidated into 9-section synthesis document.
 - **Files:** `books/chemo-journal/RESEARCH_SYNTHESIS.md`
