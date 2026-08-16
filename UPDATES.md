@@ -7,6 +7,13 @@ When finishing work, append an entry below.
 
 ## Recent Changes
 
+### 2026-08-16 — Chemo Journal Research Synthesis
+- **What:** Deep research on competitor journals, clinical standards (UKONS, PRO-CTCAE, CR-UK), design best practices, and KDP market data. Consolidated into 9-section synthesis document.
+- **Files:** `books/chemo-journal/RESEARCH_SYNTHESIS.md`
+- **Impact:** Content spec validated against clinical standards; enhanced symptom list (18 UKONS symptoms), traffic light severity system, lab flag column, "what helped" per cycle, emergency triage guidance
+- **Breaking changes:** None
+- **Alerts for other projects:** None
+
 ### 2026-08-16 — Chemo Journal Publishing Playbook Created
 - **What:** Full publishing playbook for Chemotherapy Treatment Journal (Book 2) — metadata, keywords, categories, description HTML, pricing, cover specs, upload checklist
 - **Files:** `books/chemo-journal/PUBLISHING_PLAYBOOK.md`, `books/PIPELINE.md`
