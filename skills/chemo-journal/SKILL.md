@@ -406,7 +406,7 @@ def build_journal():
 | Spec | Value |
 |------|-------|
 | Spine width | 130 × 0.002252 + 0.06 = **0.353 in** |
-| Full cover wrap | **17.35 × 11.25 in** (5205 × 3375 px @ 300 DPI) |
+| Full cover wrap | **17.60 × 11.25 in** (5281 × 3375 px @ 300 DPI) |
 | Bleed | 0.125 in on all outer edges (cover only) |
 | Paper | White |
 | Interior | Black & white |

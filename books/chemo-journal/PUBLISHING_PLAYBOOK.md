@@ -13,7 +13,7 @@
 | Interior | Black & white, white paper, 130 pages |
 | Structure | Front matter (6pp) + quick-reference tools (6pp) + calendars (6pp) + treatment tracking (58pp) + wellness tracking (24pp) + emotional support (20pp) + milestones/closing (10pp) |
 | Spine | 0.353 in (130 × 0.002252 + 0.06) |
-| Full cover | 17.35 × 11.25 in (5205 × 3375 px @ 300 DPI) |
+| Full cover | 17.60 × 11.25 in (5281 × 3375 px @ 300 DPI) |
 | **Official cover** | **TBD — design in Affinity Publisher or Canva** |
 | List price | $14.99 (US) |
 
@@ -121,7 +121,7 @@ Pick the closest live paths in KDP's picker — wording shifts periodically.
 ### Specs for Affinity Publisher / Canva
 
 **Custom canvas (full wrap, 300 DPI):**
-- **5205 × 3375 px** (= 17.35 × 11.25 in)
+- **5281 × 3375 px** (= 17.60 × 11.25 in)
 - **Bleed:** 37.5 px (0.125 in) inset on all four edges
 - **Spine:** center strip **106 px** wide (0.353 in)
 - Panels: back = left 2550 px, spine = center 106 px, front = right 2550 px (each panel + its outer bleed)
