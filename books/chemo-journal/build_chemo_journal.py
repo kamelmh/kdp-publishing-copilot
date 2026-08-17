@@ -133,12 +133,17 @@ def draw_checkbox_row(c, items, x, y, col_w=2.0 * inch):
 
 
 def draw_writing_lines(c, x, y, width, count, spacing=WRITING_LINE_SPACING):
-    """Draw ruled writing lines. Returns y below last line."""
+    """Draw ruled writing lines. Returns y below last line.
+    Stops early if lines would go below page margin."""
     c.setStrokeColor(TAUPE)
     c.setLineWidth(0.4)
+    drawn = 0
     for _ in range(count):
+        if y - spacing < MARGIN:
+            break
         c.line(x, y, x + width, y)
         y -= spacing
+        drawn += 1
     return y
 
 
@@ -176,8 +181,10 @@ def draw_table(c, headers, rows, y, col_widths=None, row_h=20):
 
 
 def draw_empty_table_rows(c, count, y, row_h=20):
-    """Draw empty table rows with dividing lines."""
+    """Draw empty table rows with dividing lines. Stops if rows would overflow page."""
     for _ in range(count):
+        if y - row_h < MARGIN:
+            break
         c.setStrokeColor(TAUPE)
         c.setLineWidth(0.3)
         c.line(MARGIN, y - 2, MARGIN + CONTENT_W, y - 2)
@@ -379,7 +386,7 @@ def build_emergency_contacts(c):
 
     # Emergency callout box
     y -= 10
-    box_h = 160
+    box_h = 180
     c.setStrokeColor(BLUSH)
     c.setLineWidth(1.5)
     c.roundRect(MARGIN, y - box_h, CONTENT_W, box_h, 5, fill=0, stroke=1)
@@ -405,7 +412,7 @@ def build_emergency_contacts(c):
 
     c.setFont("Georgia-Italic", 8)
     c.setFillColor(TAUPE)
-    c.drawString(MARGIN + 10, y - box_h + 12,
+    c.drawString(MARGIN + 10, y - box_h + 14,
                  "Confirm your exact thresholds with your oncology team; every regimen is different.")
 
     c.showPage()
@@ -478,19 +485,22 @@ def build_symptom_reference(c, page_num):
 
     for cat_name, items in categories_p1:
         y = draw_section_band(c, cat_name, y, accent=SAGE, width=CONTENT_W / 2 - 6)
-        # Draw items in 2 columns
+        # Split items into two balanced columns
+        mid = (len(items) + 1) // 2
+        col1 = items[:mid]
+        col2 = items[mid:]
         col_w = (CONTENT_W / 2 - 20) / 2
         x1 = MARGIN
         x2 = MARGIN + CONTENT_W / 2 + 10
-        iy = y
-        for i, item in enumerate(items):
-            if i < (len(items) + 1) // 2:
-                draw_checkbox(c, item, x1, iy)
-                iy -= CHECKBOX_SIZE + 6
-            else:
-                draw_checkbox(c, item, x2, iy)
-                iy -= CHECKBOX_SIZE + 6
-        y = iy - 10
+        iy1 = y
+        iy2 = y
+        for item in col1:
+            draw_checkbox(c, item, x1, iy1)
+            iy1 -= CHECKBOX_SIZE + 6
+        for item in col2:
+            draw_checkbox(c, item, x2, iy2)
+            iy2 -= CHECKBOX_SIZE + 6
+        y = min(iy1, iy2) - 10
 
     c.showPage()
 
@@ -518,18 +528,21 @@ def build_symptom_reference(c, page_num):
 
     for cat_name, items in categories_p2:
         y = draw_section_band(c, cat_name, y, accent=SAGE, width=CONTENT_W / 2 - 6)
+        mid = (len(items) + 1) // 2
+        col1 = items[:mid]
+        col2 = items[mid:]
         col_w = (CONTENT_W / 2 - 20) / 2
         x1 = MARGIN
         x2 = MARGIN + CONTENT_W / 2 + 10
-        iy = y
-        for i, item in enumerate(items):
-            if i < (len(items) + 1) // 2:
-                draw_checkbox(c, item, x1, iy)
-                iy -= CHECKBOX_SIZE + 6
-            else:
-                draw_checkbox(c, item, x2, iy)
-                iy -= CHECKBOX_SIZE + 6
-        y = iy - 10
+        iy1 = y
+        iy2 = y
+        for item in col1:
+            draw_checkbox(c, item, x1, iy1)
+            iy1 -= CHECKBOX_SIZE + 6
+        for item in col2:
+            draw_checkbox(c, item, x2, iy2)
+            iy2 -= CHECKBOX_SIZE + 6
+        y = min(iy1, iy2) - 10
 
     c.showPage()
 
@@ -595,7 +608,7 @@ def build_doctor_questions(c):
             c.setFont("Georgia-Bold", FIELD_LABEL_PT)
             c.setFillColor(SAGE)
             c.drawString(MARGIN, y, cat_name)
-            y -= 14
+            y -= 12
 
             for q in q_list:
                 # Checkbox
@@ -606,13 +619,13 @@ def build_doctor_questions(c):
                 c.setFont("Georgia", SMALL_PT)
                 c.setFillColor(CHARCOAL)
                 c.drawString(MARGIN + CHECKBOX_SIZE + 5, y, q)
-                y -= 14
+                y -= 12
                 # Answer line
                 c.setStrokeColor(TAUPE)
                 c.setLineWidth(0.3)
                 c.line(MARGIN + CHECKBOX_SIZE + 5, y, PAGE_W - MARGIN, y)
-                y -= 12
-            y -= 4
+                y -= 10
+            y -= 2
 
         # Blank lines for own questions
         c.setFont("Georgia-Bold", FIELD_LABEL_PT)
@@ -754,16 +767,18 @@ def build_chemo_cycle_tracker(c, cycle_num):
         cat_w = c.stringWidth(cat_name + ": ", "Georgia-Bold", 9)
         ix = MARGIN + cat_w
         for item in items:
+            item_w = c.stringWidth(item, "Georgia", 8) + CHECKBOX_SIZE + 10
+            # Wrap to next line if item won't fit
+            if ix + item_w > PAGE_W - MARGIN:
+                ix = MARGIN + cat_w
+                y -= 12
             c.setStrokeColor(CHARCOAL)
             c.setLineWidth(0.5)
             c.rect(ix, y - 2, CHECKBOX_SIZE - 4, CHECKBOX_SIZE - 4, fill=0, stroke=1)
             c.setFont("Georgia", 8)
             c.setFillColor(CHARCOAL)
             c.drawString(ix + CHECKBOX_SIZE, y, item)
-            ix += c.stringWidth(item, "Georgia", 8) + CHECKBOX_SIZE + 10
-            if ix > PAGE_W - MARGIN - 1 * inch:
-                ix = MARGIN + cat_w
-                y -= 12
+            ix += item_w
         y -= 14
 
     # Next cycle & notes
@@ -933,13 +948,13 @@ def build_hydration_nutrition(c, entry_num):
     y = draw_header(c, "Hydration & Nutrition", y, accent=SAGE)
 
     y = draw_field(c, "Date", MARGIN, y, field_w=3 * inch)
-    y -= 8
+    y -= 6
 
     # Water tracker
     c.setFont("Georgia-Bold", FIELD_LABEL_PT)
     c.setFillColor(CHARCOAL)
     c.drawString(MARGIN, y, "Water Intake (8oz glasses):")
-    y -= 14
+    y -= 12
     glass_x = MARGIN
     for i in range(10):
         c.setStrokeColor(SLATE)
@@ -949,17 +964,17 @@ def build_hydration_nutrition(c, entry_num):
         c.setFillColor(TAUPE)
         c.drawCentredString(glass_x + 10, y - 8, str(i + 1))
         glass_x += 24
-    y -= 30
+    y -= 28
 
     # Meals
     c.setFont("Georgia-Bold", FIELD_LABEL_PT)
     c.setFillColor(CHARCOAL)
     c.drawString(MARGIN, y, "Meals:")
-    y -= 14
+    y -= 12
     meals = ["Breakfast", "Lunch", "Dinner", "Snacks"]
     for meal in meals:
         y = draw_field(c, meal, MARGIN, y, field_w=CONTENT_W)
-    y -= 8
+    y -= 6
 
     # Appetite
     c.setFont("Georgia-Bold", FIELD_LABEL_PT)
@@ -970,7 +985,7 @@ def build_hydration_nutrition(c, entry_num):
     for opt in appetite_options:
         draw_checkbox(c, opt, ax, y)
         ax += 1.1 * inch
-    y -= 18
+    y -= 16
 
     y = draw_field(c, "Foods That Helped", MARGIN, y, field_w=CONTENT_W)
     y = draw_field(c, "Foods That Didn't Sit Well", MARGIN, y, field_w=CONTENT_W)
@@ -1047,7 +1062,7 @@ def build_sleep_energy(c, entry_num):
     draw_checkbox(c, "Yes", MARGIN + 50, y)
     draw_checkbox(c, "No", MARGIN + 90, y)
     y = draw_field(c, "Duration", MARGIN + 140, y, field_w=1.5 * inch)
-    y -= 8
+    y -= 6
 
     c.setFont("Georgia-Bold", FIELD_LABEL_PT)
     c.setFillColor(CHARCOAL)
